@@ -7,7 +7,7 @@ Ez a csomag a MyFirstWeb uj iranyanak dolgozhato alapja.
 - Next.js 15 + React 19 + TypeScript
 - Tailwind CSS 4
 - Prisma ORM
-- SQLite starter adatbazis a gyors helyi teszteleshez
+- PostgreSQL-re elokeszitett adatbazis kapcsolat
 - sajat bejelentkezes session cookie-val
 - mukodo backend az alabbi modulokhoz:
   - Contacts
@@ -26,7 +26,7 @@ Ez a csomag a MyFirstWeb uj iranyanak dolgozhato alapja.
 Pelda:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
 AUTH_SECRET="itt-legyen-egy-hosszu-sajat-titok"
 ```
 
@@ -81,8 +81,8 @@ Belepes utan: `http://localhost:3000/office`
 
 ## Megjegyzesek
 
-- A mostani verzio SQLite-ot hasznal a gyors helyi teszteleshez.
-- Kesobb Postgresre at lehet rakni a Prisma datasourcet.
+- A mostani verzio kulso PostgreSQL adatbazisra van elokeszitve.
+- Vercelhez ajanlott szolgaltatok: Neon, Supabase, Railway vagy sajat PostgreSQL.
 - A social, messages, content es tobbi office oldal jelenleg UI-vaz / demo szint.
 - A Contacts, Leads, Tasks es Calendar modulok mar valodi backenddel mennek.
 - A projekt nem statikus oldal, hanem Node.js-t igenylo Next.js alkalmazas.

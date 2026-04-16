@@ -13,11 +13,17 @@ export async function loginAction(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent('Add meg a felhasználónevet és a jelszót.')}`);
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ username }, { email: username }],
-    },
-  });
+  let user;
+
+  try {
+    user = await prisma.user.findFirst({
+      where: {
+        OR: [{ username }, { email: username }],
+      },
+    });
+  } catch {
+    redirect(`/login?error=${encodeURIComponent('Az adatbazis nem erheto el. Ellenorizd a DATABASE_URL beallitast, a schema deployt es a seed adatokat.')}`);
+  }
 
   if (!user) {
     redirect(`/login?error=${encodeURIComponent('Nincs ilyen felhasználó.')}`);

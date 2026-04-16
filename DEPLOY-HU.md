@@ -22,6 +22,14 @@ Nem jo:
 - sima statikus webtarhely
 - olyan hely, ahova csak HTML/CSS/JS fajlt lehet feltolteni
 
+## Vercelhez ajanlott adatbazis
+
+Vercelen ehhez a projekthez kulso PostgreSQL adatbazis ajanlott.
+
+- jo valasztas: Neon, Supabase, Railway vagy sajat PostgreSQL
+- a teljes app ugyanazzal a `DATABASE_URL` kapcsolattal fut
+- deploy utan futtasd a schema szinkront es a seedet is
+
 ## A projekt most milyen feltoltesre van elokeszitve?
 
 A projekt mar `standalone` buildre van allitva, vagyis az `npm run build` utan a Next.js elo tud allitani egy kulon futtathato szervercsomagot.
@@ -86,25 +94,17 @@ npm run start
 Pelda:
 
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
 AUTH_SECRET="ide-egy-nagyon-hosszu-eros-titok-kell"
 ```
 
-## Fontos megjegyzes SQLite-hoz
+## Fontos megjegyzes PostgreSQL-hez
 
-A mostani projekt `SQLite`-ot hasznal.
+A mostani projekt `PostgreSQL` kapcsolatra van elokeszitve.
 
-Ez jo:
-
-- demora
-- sajat szerverre
-- kisebb forgalmu indulashoz
-
-Kesobb, komolyabb eles hasznalatra jobb lesz:
-
-- `PostgreSQL`
-
-De a mostani verzio mar feltoltheto es futtathato `SQLite + Node.js` alapon is.
+- lokalis fejleszteshez is ugyanilyen kulso DB ajanlott
+- Vercelben a `DATABASE_URL` es `AUTH_SECRET` legyen beallitva
+- az elso deploy utan szukseges a schema es a seed feltoltese
 
 ## Ajánlott indulasi mod
 

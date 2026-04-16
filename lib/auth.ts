@@ -45,7 +45,12 @@ export async function getSession() {
 export async function getCurrentUser() {
   const session = await getSession();
   if (!session?.sub) return null;
-  return prisma.user.findUnique({ where: { id: session.sub } });
+
+  try {
+    return await prisma.user.findUnique({ where: { id: session.sub } });
+  } catch {
+    return null;
+  }
 }
 
 export async function requireUser() {
