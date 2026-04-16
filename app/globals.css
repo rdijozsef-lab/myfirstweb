@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f4ef;
+  --foreground: #111827;
+  --muted: #667085;
+  --line: #d9d6cf;
+  --panel: #ffffff;
+  --panel-soft: #f6efe6;
+  --brand: #ea580c;
+  --brand-strong: #c2410c;
+  --accent: #0f172a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 22%),
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.08), transparent 18%),
+    var(--background);
+  color: var(--foreground);
+}
+
+body::selection {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-panel: var(--panel);
+  --color-panel-soft: var(--panel-soft);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-accent: var(--accent);
+}
+
+@layer base {
+  * {
+    @apply border-line;
+  }
+
+  body {
+    @apply antialiased;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight text-slate-950;
+  }
+
+  p {
+    @apply text-slate-600;
+  }
+}
+
+@layer components {
+  .container-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass-panel {
+    @apply rounded-[28px] border border-white/60 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur;
+  }
+
+  .soft-panel {
+    @apply rounded-[24px] border bg-white p-6 shadow-[0_12px_36px_rgba(15,23,42,0.06)];
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-700;
+  }
+
+  .btn-primary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-[20px] bg-brand px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_34px_rgba(234,88,12,0.24)] transition hover:bg-brand-strong;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-12 items-center justify-center rounded-[20px] border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-orange-300 hover:text-orange-700;
+  }
+
+  .office-card {
+    @apply rounded-[24px] border bg-white p-5 shadow-[0_14px_36px_rgba(15,23,42,0.05)];
+  }
+
+  .office-title {
+    @apply text-lg font-semibold text-slate-950;
+  }
+}

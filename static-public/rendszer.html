@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyFirstOffice | Rendszer felépítése</title>
+  <meta name="description" content="A MyFirstOffice rendszerfelépítése: közös mag, modulok, preset logika és publikus webes réteg.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header__row">
+      <a class="brand" href="index.html">
+        <img src="assets/img/logo-mark-dark.png" alt="My First Web logó">
+        <div>
+          <div class="brand__eyebrow">My First Web</div>
+          <div class="brand__sub">MyFirstOffice publikus csomag</div>
+        </div>
+      </a>
+      <nav class="nav">
+        <a href="index.html">Főoldal</a>
+        <a class="is-active" href="rendszer.html">Rendszer</a>
+        <a href="demo.html">Demo</a>
+      </nav>
+      <div class="button-row">
+        <a class="btn-secondary" href="index.html">Vissza a főoldalra</a>
+        <a class="btn-primary" href="demo.html">Demo oldalak</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="hero" style="padding-top:28px;">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Rendszer felépítése</span>
+        <h1 style="margin:10px 0 0;font-size:clamp(2.1rem,4vw,3.6rem);line-height:1.08;">A MyFirstOffice nem újabb adminpanel. Egy közös magra épülő üzleti webes rendszer.</h1>
+        <p>A termék szerkezete úgy lett kitalálva, hogy egyszerre tudja kiszolgálni a publikus oldalt, a belső office működést, a dokumentációs logikát és a moduláris bővíthetőséget.</p>
+      </div>
+
+      <section class="section">
+        <div class="card-grid">
+          <article class="info-card">
+            <h2>Core alap</h2>
+            <ul class="list">
+              <li class="list-item">felhasználók és jogosultságok</li>
+              <li class="list-item">dashboard</li>
+              <li class="list-item">kapcsolatok és projektek</li>
+              <li class="list-item">feladatkezelés</li>
+              <li class="list-item">naptár</li>
+            </ul>
+          </article>
+          <article class="info-card">
+            <h2>Content és marketing</h2>
+            <ul class="list">
+              <li class="list-item">oldalak</li>
+              <li class="list-item">blokk alapú CMS</li>
+              <li class="list-item">blog és média</li>
+              <li class="list-item">social időzítés</li>
+              <li class="list-item">kampánylogika</li>
+            </ul>
+          </article>
+          <article class="info-card">
+            <h2>Modulréteg</h2>
+            <ul class="list">
+              <li class="list-item">ajánlatkérő</li>
+              <li class="list-item">kivitelezői projektmotor</li>
+              <li class="list-item">booking vagy workshop</li>
+              <li class="list-item">webshop light</li>
+              <li class="list-item">preset logika</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="two-col-grid">
+          <article class="panel" style="padding:28px;">
+            <span class="eyebrow">Működési rétegek</span>
+            <h2 style="margin-top:12px;">A publikus web és az office ugyanahhoz a rendszerhez kapcsolódik.</h2>
+            <p>Nem külön-külön kezelt eszközökről van szó, hanem egy közös logikáról. A publikus web gyűjtheti az érdeklődést és megmutathatja a termék irányát, az office pedig ugyanennek a rendszernek a belső motorja lehet.</p>
+            <div class="process-list" style="margin-top:18px;">
+              <div class="process-item">
+                <strong>1. Core telepítése</strong>
+                <p>A rendszer közös magja adja a felhasználókat, státuszokat, projektalapokat és működési keretet.</p>
+              </div>
+              <div class="process-item">
+                <strong>2. Modulaktiválás</strong>
+                <p>A kívánt üzleti funkciók modulonként kapcsolhatók rá: kivitelezés, ajánlatkérés, dokumentáció vagy egyéb vertikum.</p>
+              </div>
+              <div class="process-item">
+                <strong>3. Preset és design</strong>
+                <p>Az ügyfél egy már működő szerkezetből indul, amire egyedi megjelenés és üzleti logika kerül.</p>
+              </div>
+              <div class="process-item">
+                <strong>4. Office használat</strong>
+                <p>A teljes belső app szerveroldali futtatást igényel, ezért sima tárhelyen csak a publikus réteg használható.</p>
+              </div>
+            </div>
+          </article>
+
+          <div class="process-list">
+            <div class="process-item">
+              <strong>Core</strong>
+              <p>felhasználók, kapcsolatok, projektek, feladatok, üzenetek, naptár</p>
+            </div>
+            <div class="process-item">
+              <strong>Content</strong>
+              <p>oldalak, blog, média, SEO mezők és publikálás</p>
+            </div>
+            <div class="process-item">
+              <strong>Sales</strong>
+              <p>ajánlatkérő, státuszlogika, jegyzetek és követési pontok</p>
+            </div>
+            <div class="process-item">
+              <strong>Kivitelezői irány</strong>
+              <p>projekt, dokumentáció, munkafolyamatok, szereplők és operatív kivitelezés</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="office-note">
+          <strong>Fontos:</strong> ez a statikus csomag a publikus webes bemutatóhoz készült. Az office, login, projektkezelés, Prisma és adatbázis oldali funkciók továbbra is külön, szerveres környezetet igényelnek.
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="brand__eyebrow">MyFirstOffice</div>
+        <h3>Közös rendszeralapból épülő termék.</h3>
+        <p>A publikus oldalak külön is feltölthetők, de az office app nem része a sima tárhelyes csomagnak.</p>
+      </div>
+      <div>
+        <h4>Oldalak</h4>
+        <ul>
+          <li><a href="index.html">Főoldal</a></li>
+          <li><a href="rendszer.html">Rendszer</a></li>
+          <li><a href="demo.html">Demo</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Tudnivaló</h4>
+        <ul>
+          <li>statikus feltöltésre kész</li>
+          <li>office külön futtatást igényel</li>
+          <li>assets mappával együtt töltsd fel</li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

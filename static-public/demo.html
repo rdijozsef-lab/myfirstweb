@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyFirstOffice | Demo oldalak</title>
+  <meta name="description" content="MyFirstOffice demo és preset oldalak a publikus, sima tárhelyre feltölthető csomagban.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header__row">
+      <a class="brand" href="index.html">
+        <img src="assets/img/logo-mark-dark.png" alt="My First Web logó">
+        <div>
+          <div class="brand__eyebrow">My First Web</div>
+          <div class="brand__sub">MyFirstOffice publikus csomag</div>
+        </div>
+      </a>
+      <nav class="nav">
+        <a href="index.html">Főoldal</a>
+        <a href="rendszer.html">Rendszer</a>
+        <a class="is-active" href="demo.html">Demo</a>
+      </nav>
+      <div class="button-row">
+        <a class="btn-secondary" href="index.html">Főoldal</a>
+        <a class="btn-primary" href="rendszer.html">Rendszer felépítése</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="hero" style="padding-top:28px;">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Publikus demo pontok</span>
+        <h1 style="margin:10px 0 0;font-size:clamp(2.1rem,4vw,3.6rem);line-height:1.08;">Innen mutatható meg a termék iránya akkor is, ha nincs Node.js tárhely.</h1>
+        <p>Ezen az oldalon csak a publikus bemutató réteg szerepel. A teljes office és projektmotor külön szerveroldali futtatást igényel.</p>
+      </div>
+
+      <section class="section">
+        <div class="card-grid">
+          <article class="info-card">
+            <h2>Főoldal demo</h2>
+            <p>A rendszeralap, a vizuális irány és a fő termékígéret bemutatása.</p>
+            <div class="button-row"><a class="btn-primary" href="index.html">Megnyitom</a></div>
+          </article>
+          <article class="info-card">
+            <h2>Rendszer oldal</h2>
+            <p>A közös mag, a modulok és a termékfelépítés röviden, átláthatóan.</p>
+            <div class="button-row"><a class="btn-primary" href="rendszer.html">Megnyitom</a></div>
+          </article>
+          <article class="info-card">
+            <h2>Office demo</h2>
+            <p>Ez a rész a statikus csomagban csak jelzésértékű, mert valós működéshez szerveroldali környezet kell.</p>
+            <div class="office-note" style="margin-top:12px;">A belső app nem fut sima tárhelyen.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <span class="eyebrow">Preset mintaoldalak</span>
+          <h2>A preset gondolkodás ettől még jól megmutatható a publikus rétegben is.</h2>
+        </div>
+        <div class="preset-grid">
+          <article class="info-card preset-card">
+            <img src="assets/img/referenciak/desktop-demo-preview.png" alt="Szolgáltatói preset">
+            <h3>Szolgáltató</h3>
+            <p>Landing, ajánlatkérő és könnyű operációs logika.</p>
+          </article>
+          <article class="info-card preset-card">
+            <img src="assets/img/referenciak/henikonyha-demo.png" alt="Workshop preset">
+            <h3>Workshop</h3>
+            <p>Eseményalapú folyamat és jelentkezési logika.</p>
+          </article>
+          <article class="info-card preset-card">
+            <img src="assets/img/referenciak/akbaba.png" alt="Webshop light preset">
+            <h3>Webshop light</h3>
+            <p>Termékek és rendelési útvonal egyszerűsített modellben.</p>
+          </article>
+          <article class="info-card preset-card">
+            <img src="assets/img/referenciak/hazepitok.png" alt="Kivitelezői preset">
+            <h3>Kivitelező</h3>
+            <p>Projektközpontú működés, dokumentáció és munkafolyamat-szemlélet.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="office-note">
+          <strong>Office rész külön:</strong> ha később lesz Node.js-es tárhely vagy VPS, a mostani belső app külön is élesíthető. Ez a csomag most arra jó, hogy a publikus weboldalad felkerüljön sima tárhelyre.
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="brand__eyebrow">MyFirstOffice</div>
+        <h3>Publikus demóhoz kész statikus csomag.</h3>
+        <p>Feltölthető FTP-n vagy tárhelykezelőn keresztül, Node.js nélkül is.</p>
+      </div>
+      <div>
+        <h4>Navigáció</h4>
+        <ul>
+          <li><a href="index.html">Főoldal</a></li>
+          <li><a href="rendszer.html">Rendszer</a></li>
+          <li><a href="demo.html">Demo</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Feltöltés</h4>
+        <ul>
+          <li><a href="telepites.html">Leírás megnyitása</a></li>
+          <li>másold fel az egész mappát</li>
+          <li>index.html legyen a nyitóoldal</li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

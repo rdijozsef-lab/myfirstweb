@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyFirstOffice | Statikus feltöltés</title>
+  <meta name="description" content="Rövid leírás a MyFirstOffice publikus statikus csomagjának feltöltéséhez.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header__row">
+      <a class="brand" href="index.html">
+        <img src="assets/img/logo-mark-dark.png" alt="My First Web logó">
+        <div>
+          <div class="brand__eyebrow">My First Web</div>
+          <div class="brand__sub">MyFirstOffice publikus csomag</div>
+        </div>
+      </a>
+      <nav class="nav">
+        <a href="index.html">Főoldal</a>
+        <a href="rendszer.html">Rendszer</a>
+        <a href="demo.html">Demo</a>
+        <a class="is-active" href="telepites.html">Feltöltés</a>
+      </nav>
+      <div class="button-row">
+        <a class="btn-secondary" href="index.html">Főoldal</a>
+        <a class="btn-primary" href="demo.html">Demo</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="hero" style="padding-top:28px;">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Statikus feltöltés</span>
+        <h1 style="margin:10px 0 0;font-size:clamp(2.1rem,4vw,3.4rem);line-height:1.08;">Így tedd fel ezt a publikus csomagot sima tárhelyre.</h1>
+        <p>Ez a csomag a MyFirstOffice publikus, Node.js nélküli változata. FTP-vel vagy a tárhely fájlkezelőjén keresztül is feltölthető.</p>
+      </div>
+
+      <section class="section">
+        <div class="card-grid">
+          <article class="info-card">
+            <h2>Mire jó</h2>
+            <ul class="list">
+              <li class="list-item">működik Node.js nélkül</li>
+              <li class="list-item">FTP-vel feltölthető</li>
+              <li class="list-item">tartalmazza a publikus oldalakat</li>
+            </ul>
+          </article>
+          <article class="info-card">
+            <h2>Mire nem jó</h2>
+            <ul class="list">
+              <li class="list-item">nem fut rajta az office</li>
+              <li class="list-item">nincs benne adatbázis</li>
+              <li class="list-item">nincs login és admin</li>
+            </ul>
+          </article>
+          <article class="info-card">
+            <h2>Mit tölts fel</h2>
+            <ul class="list">
+              <li class="list-item">`index.html`</li>
+              <li class="list-item">`rendszer.html`</li>
+              <li class="list-item">`demo.html`</li>
+              <li class="list-item">`styles.css`</li>
+              <li class="list-item">`assets/` mappa</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="process-list">
+          <div class="process-item">
+            <strong>1. Nyisd meg a `static-public` mappát</strong>
+            <p>Ezt a mappát készítettem elő a sima tárhelyes feltöltéshez.</p>
+          </div>
+          <div class="process-item">
+            <strong>2. Töltsd fel a teljes tartalmát</strong>
+            <p>Nem csak a HTML-eket, hanem a `styles.css`-t és az `assets` mappát is másold fel.</p>
+          </div>
+          <div class="process-item">
+            <strong>3. Az `index.html` legyen a nyitóoldal</strong>
+            <p>Ha a domain gyökerébe töltöd, akkor ez lesz az induló oldal.</p>
+          </div>
+          <div class="process-item">
+            <strong>4. Ellenőrizd a belső linkeket</strong>
+            <p>A további oldalak így érhetők el: `rendszer.html`, `demo.html`, `telepites.html`.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="office-note">
+          <strong>Fontos:</strong> ha később lesz Node.js-es tárhelyed vagy VPS-ed, a teljes Next.js + Prisma alapú office app külön is élesíthető. Ez a csomag most csak a publikus webes részre készült.
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="brand__eyebrow">MyFirstOffice</div>
+        <h3>Publikus, statikus feltöltési csomag.</h3>
+        <p>Arra készült, hogy Node.js nélkül is legyen kint egy rendezett publikus oldalad.</p>
+      </div>
+      <div>
+        <h4>Oldalak</h4>
+        <ul>
+          <li><a href="index.html">Főoldal</a></li>
+          <li><a href="rendszer.html">Rendszer</a></li>
+          <li><a href="demo.html">Demo</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Tudnivaló</h4>
+        <ul>
+          <li>office külön fut</li>
+          <li>assets mappával együtt töltsd fel</li>
+          <li>index.html legyen a belépőpont</li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

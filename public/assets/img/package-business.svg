@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" fill="none">
+    <rect width="720" height="460" rx="30" fill="#FFF2E8"/>
+    <rect x="54" y="54" width="128" height="40" rx="20" fill="#FF7A3D"/>
+    <rect x="54" y="126" width="280" height="18" rx="9" fill="#162033"/>
+    <rect x="54" y="156" width="210" height="14" rx="7" fill="#CBD6E8"/>
+    <rect x="54" y="216" width="612" height="132" rx="28" fill="#FFFFFF"/>
+    <rect x="88" y="248" width="138" height="16" rx="8" fill="#FF7A3D"/>
+    <rect x="88" y="280" width="108" height="12" rx="6" fill="#FFB26B"/>
+    <rect x="272" y="248" width="144" height="16" rx="8" fill="#162033"/>
+    <rect x="272" y="280" width="114" height="12" rx="6" fill="#CBD6E8"/>
+    <rect x="448" y="248" width="146" height="16" rx="8" fill="#162033"/>
+    <rect x="448" y="280" width="120" height="12" rx="6" fill="#CBD6E8"/>
+    <rect x="54" y="372" width="188" height="42" rx="21" fill="#FF7A3D"/>
+    <text x="118" y="81" font-family="Inter,Arial" font-size="20" font-weight="800" fill="#FFFFFF">BUSINESS</text>
+    </svg>

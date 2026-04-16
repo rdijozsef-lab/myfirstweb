@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" fill="none">
+<rect width="1200" height="760" rx="36" fill="#08111f"/>
+<rect x="58" y="58" width="1084" height="644" rx="28" fill="url(#g1)"/>
+<rect x="422" y="104" width="356" height="552" rx="42" fill="#0d1728" stroke="#24324a" stroke-width="10"/>
+<rect x="531" y="121" width="138" height="18" rx="9" fill="#24324a"/>
+<rect x="448" y="162" width="304" height="452" rx="28" fill="#fff"/>
+<rect x="448" y="162" width="304" height="120" rx="28" fill="url(#g2)"/>
+<rect x="474" y="196" width="142" height="18" rx="9" fill="#fff" fill-opacity="0.88"/>
+<rect x="474" y="226" width="222" height="20" rx="10" fill="#fff" fill-opacity="0.92"/>
+<rect x="474" y="262" width="196" height="14" rx="7" fill="#fff" fill-opacity="0.7"/>
+<rect x="474" y="308" width="252" height="76" rx="18" fill="#f2f5fa"/>
+<rect x="474" y="398" width="118" height="88" rx="18" fill="#f2f5fa"/>
+<rect x="608" y="398" width="118" height="88" rx="18" fill="#f2f5fa"/>
+<rect x="474" y="502" width="252" height="16" rx="8" fill="#e6ebf2"/>
+<rect x="474" y="534" width="208" height="16" rx="8" fill="#e6ebf2"/>
+<text x="86" y="640" fill="#eef5ff" font-family="Inter, Arial" font-size="54" font-weight="800">Mobil emulátor demo</text>
+<text x="86" y="690" fill="#9bb2cf" font-family="Inter, Arial" font-size="28">Telefonkeretben bemutatott valós mobil felület</text>
+<defs>
+<linearGradient id="g1" x1="58" y1="58" x2="1142" y2="702" gradientUnits="userSpaceOnUse">
+<stop stop-color="#0e203a"/>
+<stop offset="1" stop-color="#123e59"/>
+</linearGradient>
+<linearGradient id="g2" x1="448" y1="162" x2="752" y2="282" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3478ff"/>
+<stop offset="1" stop-color="#61d5ff"/>
+</linearGradient>
+</defs>
+</svg>

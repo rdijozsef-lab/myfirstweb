@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" fill="none">
+<rect width="1200" height="760" rx="36" fill="#08111f"/>
+<rect x="52" y="58" width="1096" height="644" rx="28" fill="#eef3f9"/>
+<rect x="52" y="58" width="236" height="644" rx="28" fill="#0d1727"/>
+<rect x="86" y="108" width="116" height="24" rx="12" fill="#ffffff" fill-opacity="0.16"/>
+<rect x="86" y="168" width="164" height="48" rx="16" fill="url(#ga)"/>
+<rect x="86" y="232" width="164" height="42" rx="14" fill="#ffffff" fill-opacity="0.08"/>
+<rect x="86" y="288" width="164" height="42" rx="14" fill="#ffffff" fill-opacity="0.08"/>
+<rect x="86" y="344" width="164" height="42" rx="14" fill="#ffffff" fill-opacity="0.08"/>
+<rect x="326" y="110" width="286" height="120" rx="24" fill="#fff"/>
+<rect x="632" y="110" width="186" height="120" rx="24" fill="#fff"/>
+<rect x="838" y="110" width="186" height="120" rx="24" fill="#fff"/>
+<rect x="326" y="256" width="698" height="208" rx="24" fill="#fff"/>
+<rect x="326" y="490" width="330" height="154" rx="24" fill="#fff"/>
+<rect x="676" y="490" width="348" height="154" rx="24" fill="#fff"/>
+<rect x="360" y="302" width="622" height="18" rx="9" fill="#e7edf6"/>
+<rect x="360" y="340" width="572" height="18" rx="9" fill="#e7edf6"/>
+<rect x="360" y="378" width="524" height="18" rx="9" fill="#e7edf6"/>
+<text x="86" y="654" fill="#eef5ff" font-family="Inter, Arial" font-size="54" font-weight="800">Admin felület demo</text>
+<text x="86" y="700" fill="#9bb2cf" font-family="Inter, Arial" font-size="28">Tartalom, árak, rendelések és érdeklődések egy helyen</text>
+<defs>
+<linearGradient id="ga" x1="86" y1="168" x2="250" y2="216" gradientUnits="userSpaceOnUse">
+<stop stop-color="#2f7ef7"/>
+<stop offset="1" stop-color="#63d1ff"/>
+</linearGradient>
+</defs>
+</svg>
