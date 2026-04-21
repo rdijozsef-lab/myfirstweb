@@ -21,7 +21,8 @@ export async function loginAction(formData: FormData) {
         OR: [{ username }, { email: username }],
       },
     });
-  } catch {
+  } catch (error) {
+    console.error('Login database lookup failed', error);
     redirect(`/login?error=${encodeURIComponent('Az adatbazis nem erheto el. Ellenorizd a DATABASE_URL beallitast, a schema deployt es a seed adatokat.')}`);
   }
 
