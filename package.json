@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma db push --skip-generate && tsx prisma/seed.ts && next build",
+    "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit --pretty false",
     "check:fast": "npm run typecheck",
