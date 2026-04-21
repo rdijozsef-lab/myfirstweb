@@ -72,6 +72,29 @@ async function ensureOfficeDemo(adminId: string, contactIds: string[]) {
   }
 }
 
+async function ensureSubcontractorUser() {
+  const passwordHash = await bcrypt.hash('patrik123', 10);
+
+  return prisma.user.upsert({
+    where: { username: 'patrik' },
+    update: {
+      email: 'patrik@eppont.hu',
+      name: 'Molnar Patrik',
+      passwordHash,
+      role: UserRole.OPERATOR,
+      isActive: true,
+    },
+    create: {
+      username: 'patrik',
+      email: 'patrik@eppont.hu',
+      name: 'Molnar Patrik',
+      passwordHash,
+      role: UserRole.OPERATOR,
+      isActive: true,
+    },
+  });
+}
+
 async function ensureTechnicalParameters(
   projectId: string,
   items: Array<{
@@ -459,12 +482,13 @@ async function ensureProjectDemo(adminId: string, contactIds: string[]) {
   });
 
   const checklistDocs: Array<{ type: ProjectPlanChecklistType; title: string; workflowId: string | null }> = [
-    { type: ProjectPlanChecklistType.ARCHITECTURAL, title: 'Epiteszeti tervlap csomag', workflowId: null },
-    { type: ProjectPlanChecklistType.STRUCTURAL, title: 'Statikai terv', workflowId: null },
-    { type: ProjectPlanChecklistType.ELECTRICAL, title: 'Villamos terv', workflowId: workflow2.id },
-    { type: ProjectPlanChecklistType.MECHANICAL, title: 'Gepeszeti terv', workflowId: null },
-    { type: ProjectPlanChecklistType.FACADE, title: 'Homlokzati tervlap', workflowId: workflow1.id },
-    { type: ProjectPlanChecklistType.INTERIOR, title: 'Belso specifikacio', workflowId: workflow2.id },
+    { type: ProjectPlanChecklistType.FLOOR_PLAN, title: 'Alaprajz', workflowId: null },
+    { type: ProjectPlanChecklistType.SECTIONS, title: 'Metszetek', workflowId: null },
+    { type: ProjectPlanChecklistType.FACADES, title: 'Homlokzatok', workflowId: workflow1.id },
+    { type: ProjectPlanChecklistType.MECHANICAL_PLAN, title: 'Gepeszterv', workflowId: null },
+    { type: ProjectPlanChecklistType.ELECTRICAL_PLAN, title: 'Elektromos terv', workflowId: workflow2.id },
+    { type: ProjectPlanChecklistType.STRUCTURAL_PLAN, title: 'Statikai tervek', workflowId: null },
+    { type: ProjectPlanChecklistType.SITE_PLAN, title: 'Helyszinrajz', workflowId: null },
   ];
 
   for (const doc of checklistDocs) {
@@ -583,6 +607,8 @@ async function main() {
       role: UserRole.OWNER,
     },
   });
+
+  await ensureSubcontractorUser();
 
   const contacts = await ensureContacts();
   await ensureOfficeDemo(admin.id, contacts.map((contact) => contact.id));

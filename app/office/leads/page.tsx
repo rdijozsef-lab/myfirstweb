@@ -3,7 +3,7 @@ import { LeadSource, LeadStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/auth';
 import { OfficeShellV2 } from '@/components/office-shell-v2';
-import { DataTable, Panel, Badge } from '@/components/office-ui';
+import { DataTable, Panel } from '@/components/office-ui';
 import { createLeadAction, updateLeadStatusAction } from '@/app/office/actions/core';
 import { Field, Input, Select, Textarea } from '@/components/forms';
 import { leadStatusLabel, sourceLabel, formatDateTime } from '@/lib/office';
@@ -16,62 +16,61 @@ export default async function LeadsPage() {
   ]);
 
   return (
-    <OfficeShellV2 title="Leadek" description="Valódi pipeline a beérkező érdeklődésektől az aktív ügyfélig." userName={user.name}>
+    <OfficeShellV2 title="Erdeklodok" description="Bejovo erdeklodesek kovetese az elso kapcsolatfelveteltol az ajanlatig vagy projektig." userName={user.name}>
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <Panel title="Lead pipeline">
+        <Panel title="Erdeklodok listaja">
           <DataTable
-            headers={['Lead', 'Kapcsolat', 'Forrás', 'Státusz', 'Határidő', 'Adatlap']}
+            headers={['Erdeklodes', 'Ember', 'Forras', 'Allapot', 'Hatarido', 'Adatlap']}
             rows={leads.map((lead) => [
               <div key={`${lead.id}-title`}>
                 <div className="font-medium text-slate-900">{lead.title}</div>
-                {lead.valueLabel ? <div className="mt-1 text-xs text-slate-500">Érték: {lead.valueLabel}</div> : null}
+                {lead.valueLabel ? <div className="mt-1 text-xs text-slate-500">Ertek: {lead.valueLabel}</div> : null}
               </div>,
-              <div key={`${lead.id}-contact`}>{lead.contact?.name || '—'}</div>,
+              <div key={`${lead.id}-contact`}>{lead.contact?.name || '-'}</div>,
               <div key={`${lead.id}-source`}>{sourceLabel[lead.source]}</div>,
               <form key={`${lead.id}-status`} action={updateLeadStatusAction} className="flex gap-2">
                 <input type="hidden" name="id" value={lead.id} />
                 <select name="status" defaultValue={lead.status} className="rounded-xl border border-slate-200 px-3 py-2 text-xs">
                   {Object.entries(leadStatusLabel).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                 </select>
-                <button className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold">Mentés</button>
+                <button className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold">Mentes</button>
               </form>,
               <div key={`${lead.id}-due`} className="text-sm">{formatDateTime(lead.dueAt)}</div>,
-              <Link key={`${lead.id}-link`} href={`/office/leads/${lead.id}`} className="text-sm font-semibold text-blue-700">Megnyitás</Link>,
+              <Link key={`${lead.id}-link`} href={`/office/leads/${lead.id}`} className="text-sm font-semibold text-blue-700">Megnyitas</Link>,
             ])}
           />
         </Panel>
 
-        <Panel title="Új lead felvétele">
+        <Panel title="Uj erdeklodo felvetele">
           <form action={createLeadAction} className="grid gap-4">
-            <Field label="Lead címe"><Input name="title" placeholder="Például: új szolgáltatói érdeklődés" required /></Field>
-            <Field label="Kapcsolódó kapcsolat">
+            <Field label="Erdeklodes cime"><Input name="title" placeholder="Peldaul: uj szolgaltatoi erdeklodes" required /></Field>
+            <Field label="Kapcsolodo ember">
               <Select name="contactId" defaultValue="">
-                <option value="">Nincs kiválasztva</option>
+                <option value="">Nincs kivalasztva</option>
                 {contacts.map((contact) => <option key={contact.id} value={contact.id}>{contact.name}{contact.company ? ` - ${contact.company}` : ''}</option>)}
               </Select>
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Forrás">
+              <Field label="Forras">
                 <Select name="source" defaultValue={LeadSource.WEBSITE}>
                   {Object.entries(sourceLabel).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                 </Select>
               </Field>
-              <Field label="Státusz">
+              <Field label="Allapot">
                 <Select name="status" defaultValue={LeadStatus.NEW}>
                   {Object.entries(leadStatusLabel).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                 </Select>
               </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Érték címke"><Input name="valueLabel" placeholder="pl. magas" /></Field>
-              <Field label="Határidő"><Input type="datetime-local" name="dueAt" /></Field>
+              <Field label="Ertek cimke"><Input name="valueLabel" placeholder="pl. magas" /></Field>
+              <Field label="Hatarido"><Input type="datetime-local" name="dueAt" /></Field>
             </div>
-            <Field label="Leírás"><Textarea name="description" placeholder="Miben érdeklődött pontosan?" /></Field>
-            <button className="btn-primary" type="submit">Lead mentése</button>
+            <Field label="Leiras"><Textarea name="description" placeholder="Miben erdeklodott pontosan?" /></Field>
+            <button className="btn-primary" type="submit">Erdeklodes mentese</button>
           </form>
         </Panel>
       </section>
     </OfficeShellV2>
   );
 }
-

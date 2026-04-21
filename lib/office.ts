@@ -1,37 +1,37 @@
-import { LeadStatus, TaskPriority, TaskStatus, EventType, LeadSource } from '@prisma/client';
+import { EventType, LeadSource, LeadStatus, TaskPriority, TaskStatus } from '@prisma/client';
 
 export const leadStatusLabel: Record<LeadStatus, string> = {
-  NEW: 'Új',
+  NEW: 'Uj',
   CONTACTED: 'Kapcsolatban',
   IN_PROGRESS: 'Folyamatban',
-  OFFER_SENT: 'Ajánlat elküldve',
-  WAITING_FEEDBACK: 'Visszajelzésre vár',
+  OFFER_SENT: 'Ajanlat elkuldve',
+  WAITING_FEEDBACK: 'Visszajelzesre var',
   WON: 'Megnyert',
   LOST: 'Elveszett',
 };
 
 export const taskStatusLabel: Record<TaskStatus, string> = {
-  TODO: 'Új',
+  TODO: 'Uj',
   IN_PROGRESS: 'Folyamatban',
-  WAITING: 'Várakozik',
-  DONE: 'Kész',
-  CLOSED: 'Lezárva',
+  WAITING: 'Varakozik',
+  DONE: 'Kesz',
+  CLOSED: 'Lezarva',
 };
 
 export const priorityLabel: Record<TaskPriority, string> = {
   LOW: 'Alacsony',
-  MEDIUM: 'Normál',
+  MEDIUM: 'Normal',
   HIGH: 'Magas',
-  URGENT: 'Sürgős',
+  URGENT: 'Surgos',
 };
 
 export const eventTypeLabel: Record<EventType, string> = {
   MEETING: 'Meeting',
-  CALL: 'Hívás',
-  DEADLINE: 'Határidő',
-  BOOKING: 'Foglalás',
+  CALL: 'Hivas',
+  DEADLINE: 'Hatarido',
+  BOOKING: 'Foglalas',
   SOCIAL: 'Social',
-  INTERNAL: 'Belső',
+  INTERNAL: 'Belso',
 };
 
 export const sourceLabel: Record<LeadSource, string> = {
@@ -40,20 +40,30 @@ export const sourceLabel: Record<LeadSource, string> = {
   FACEBOOK: 'Facebook',
   INSTAGRAM: 'Instagram',
   LINKEDIN: 'LinkedIn',
-  REFERRAL: 'Ajánlás',
-  OTHER: 'Egyéb',
+  REFERRAL: 'Ajanlas',
+  OTHER: 'Egyeb',
 };
 
 export function formatDate(value?: Date | null) {
-  if (!value) return '—';
+  if (!value) return '-';
   return new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(value);
 }
 
 export function formatDateTime(value?: Date | null) {
-  if (!value) return '—';
+  if (!value) return '-';
   return new Intl.DateTimeFormat('hu-HU', {
-    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(value);
+}
+
+export function toDateInput(value?: Date | null) {
+  if (!value) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 }
 
 export function toDateTimeLocalInput(value?: Date | null) {

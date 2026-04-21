@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { loginAction } from './actions';
@@ -63,9 +62,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <div><strong>Demo jelszó:</strong> admin123</div>
           </div>
 
-          <div className="mt-6 text-sm text-slate-500">
-            <Link href="/" className="font-medium text-blue-700 hover:text-blue-800">Vissza a főoldalra</Link>
-          </div>
         </section>
       </div>
     </main>

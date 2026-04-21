@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -241,14 +241,13 @@ enum ProjectDocumentScope {
 }
 
 enum ProjectPlanChecklistType {
-  ARCHITECTURAL
-  STRUCTURAL
-  ELECTRICAL
-  MECHANICAL
-  FACADE
-  INTERIOR
-  BUDGET
-  CONTRACT
+  FLOOR_PLAN
+  SECTIONS
+  FACADES
+  MECHANICAL_PLAN
+  ELECTRICAL_PLAN
+  STRUCTURAL_PLAN
+  SITE_PLAN
   OTHER
 }
 

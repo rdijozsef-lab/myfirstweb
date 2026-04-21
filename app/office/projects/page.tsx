@@ -4,8 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/auth';
 import { OfficeShellV2 } from '@/components/office-shell-v2';
 import { Panel, Badge } from '@/components/office-ui';
-import { Field, Input, Select, Textarea } from '@/components/forms';
-import { createProjectAction, updateProjectStatusAction } from '@/app/office/actions/core';
+import { Field, Input, Select } from '@/components/forms';
+import { updateProjectStatusAction } from '@/app/office/actions/core';
 import { formatDate } from '@/lib/office';
 
 const projectStatusLabel: Record<ProjectStatus, string> = {
@@ -154,10 +154,15 @@ export default async function ProjectsPage({
 
   return (
     <OfficeShellV2
-      title="Projektek"
-      description="Az elso builderes V1 mag: projektlista, alapadatok, statuszok es gyors letrehozas egy helyen."
+      title="Projektkozpont"
+      description="A projektek listaja: gyors kereses, prioritas, hataridok, statuszok es projektmegnyitas egy helyen."
       userName={user.name}
-      toolbar={<Link href="/office" className="btn-secondary">Vissza a dashboardra</Link>}
+      toolbar={
+        <>
+          <Link href="/office/projects/new" className="btn-primary">Uj projekt varazslo</Link>
+          <Link href="/office" className="btn-secondary">Vissza a dashboardra</Link>
+        </>
+      }
       focusLabel="Projektkozpont"
       quickActions={[
         { href: '/office/projects', label: 'Futo projektek atnezese' },
@@ -165,13 +170,6 @@ export default async function ProjectsPage({
         { href: '/office/calendar', label: 'Mai helyszinek' },
       ]}
     >
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <QuickStatCard label="Futo projektek" value={String(rankedProjects.filter((project) => project.status !== ProjectStatus.CLOSED).length)} note="nyitott vagy atadas alatt" />
-        <QuickStatCard label="Magas prioritas" value={String(rankedProjects.filter((project) => project.priorityScore >= 12).length)} note="azonnali figyelmet ker" />
-        <QuickStatCard label="Lejart feladat" value={String(rankedProjects.reduce((sum, project) => sum + project.overdueOpenTasks.length, 0))} note="projekt szinten osszesitve" />
-        <QuickStatCard label="Kovetkezo hataridok" value={String(deadlineProjects.length)} note="7 napon belul zarando" />
-      </section>
-
       {(urgentProjects.length > 0 || deadlineProjects.length > 0) ? (
         <section className="mb-6 grid gap-4 xl:grid-cols-2">
           <Panel title="Lejaro / csuszo projektek">
@@ -226,7 +224,7 @@ export default async function ProjectsPage({
         </section>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <section>
         <Panel title="Projektlista">
           <form className="mb-5 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_220px_220px_auto] sm:items-end">
             <Field label="Kereses">
@@ -303,58 +301,6 @@ export default async function ProjectsPage({
               </article>
             )) : <EmptyState text="Nincs a szuroknek megfelelo projekt." />}
           </div>
-        </Panel>
-
-        <Panel title="Uj projekt letrehozasa">
-          <form action={createProjectAction} className="grid gap-4">
-            <Field label="Projekt neve">
-              <Input name="name" placeholder="Pl. Kovacs haz - Kecskemet" required />
-            </Field>
-            <Field label="Projekt kod">
-              <Input name="code" placeholder="Pl. KOV-2026-01" />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Varos">
-                <Input name="city" placeholder="Kecskemet" />
-              </Field>
-              <Field label="Irsz">
-                <Input name="postalCode" placeholder="6000" />
-              </Field>
-            </div>
-            <Field label="Cim / helyszin">
-              <Input name="addressLine" placeholder="Fo utca 12." />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Kezdes">
-                <Input type="date" name="startDate" />
-              </Field>
-              <Field label="Varhato befejezes">
-                <Input type="date" name="expectedEndDate" />
-              </Field>
-            </div>
-            <Field label="Projekt statusz">
-              <Select name="status" defaultValue={ProjectStatus.PREPARATION}>
-                {Object.entries(projectStatusLabel).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Megrendelo neve">
-              <Input name="customerName" placeholder="Kovacs Janos" />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Megrendelo telefon">
-                <Input name="customerPhone" placeholder="+36..." />
-              </Field>
-              <Field label="Megrendelo email">
-                <Input type="email" name="customerEmail" placeholder="email@pelda.hu" />
-              </Field>
-            </div>
-            <Field label="Leiras">
-              <Textarea name="description" placeholder="Rovid projekt osszefoglalo, aktualis helyzet, kulonleges megjegyzesek." />
-            </Field>
-            <button className="btn-primary" type="submit">Projekt mentese</button>
-          </form>
         </Panel>
       </section>
     </OfficeShellV2>

@@ -44,9 +44,8 @@ export function OfficeShell({ title, description, children, userName = 'Admin', 
           <div className="mt-4"><LogoutForm /></div>
         </div>
         <div className="space-y-6">
-          <NavSection title="Core" items={officeNav.core} />
-          <NavSection title="Content" items={officeNav.content} />
-          <NavSection title="Product" items={officeNav.product} />
+          <NavSection title="Terepi nezetek" items={officeNav.field} />
+          <NavSection title="Admin es hatter" items={officeNav.admin} />
         </div>
       </aside>
 

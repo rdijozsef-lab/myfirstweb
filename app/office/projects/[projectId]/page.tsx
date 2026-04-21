@@ -5,10 +5,11 @@ import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/auth';
 import { OfficeShellV2 } from '@/components/office-shell-v2';
 import { Badge, Panel } from '@/components/office-ui';
-import { formatDate, formatDateTime } from '@/lib/office';
+import { formatDate, formatDateTime, toDateInput, toDateTimeLocalInput } from '@/lib/office';
 import { Field, Input, Select, Textarea } from '@/components/forms';
-import { createProjectDocumentAction, createProjectEventAction, createProjectIssueAction, createProjectMemberAction, createProjectSiteLogEntryAction, createProjectTaskAction, createProjectWorkflowAction, updateProjectIssueStatusAction, updateProjectMemberActivityAction, updateProjectStatusAction, updateProjectTaskStatusAction, upsertProjectTechnicalParameterAction } from '@/app/office/actions/core';
-import { buildTechnicalSummaryCards, formatTechnicalValue, getTechnicalGroups, technicalFieldDefinitions, technicalSectionLabel } from '@/lib/project-technical';
+import { ConfirmSubmitButton } from '@/components/confirm-submit-button';
+import { createProjectDocumentAction, createProjectSiteLogEntryAction, createProjectWorkflowAction, deleteProjectDocumentAction, deleteProjectEventAction, deleteProjectIssueAction, deleteProjectWorkflowAction, updateProjectDetailsAction, updateProjectDocumentAction, updateProjectEventAction, updateProjectIssueAction, updateProjectIssueStatusAction, updateProjectMemberActivityAction, updateProjectTaskStatusAction, upsertProjectTechnicalParameterAction } from '@/app/office/actions/core';
+import { buildTechnicalCalculationGroups, buildTechnicalSummaryCards, formatTechnicalValue, getTechnicalGroups, technicalFieldDefinitions, technicalSectionLabel } from '@/lib/project-technical';
 
 const projectStatusLabel: Record<ProjectStatus, string> = {
   PREPARATION: 'Elokeszites',
@@ -83,21 +84,20 @@ const documentCategoryLabel: Record<ProjectDocumentCategory, string> = {
 
 const documentScopeLabel: Record<ProjectDocumentScope, string> = {
   PLAN_PACKAGE: 'Tervdokumentacio',
-  WORKFLOW: 'Munkafolyamat',
+  WORKFLOW: 'Munkafazis',
   CONTRACTOR: 'Kivitelezo',
   FINANCIAL: 'Penzugy',
   GENERAL: 'Altalanos',
 };
 
 const planChecklistLabel: Record<ProjectPlanChecklistType, string> = {
-  ARCHITECTURAL: 'Epiteszeti terv',
-  STRUCTURAL: 'Statika',
-  ELECTRICAL: 'Villamos terv',
-  MECHANICAL: 'Gepeszet',
-  FACADE: 'Homlokzat',
-  INTERIOR: 'Belso specifikacio',
-  BUDGET: 'Kolteseg / kiiras',
-  CONTRACT: 'Szerzodeses melleklet',
+  FLOOR_PLAN: 'Alaprajz',
+  SECTIONS: 'Metszetek',
+  FACADES: 'Homlokzatok',
+  MECHANICAL_PLAN: 'Gepeszterv',
+  ELECTRICAL_PLAN: 'Elektromos terv',
+  STRUCTURAL_PLAN: 'Statikai tervek',
+  SITE_PLAN: 'Helyszinrajz',
   OTHER: 'Egyeb',
 };
 
@@ -127,13 +127,16 @@ export default async function ProjectDetailPage({
   searchParams,
 }: {
   params: Promise<{ projectId: string }>;
-  searchParams?: Promise<{ q?: string; taskStatus?: string; taskType?: string; docQ?: string; docScope?: string; tab?: string; notice?: string; techSection?: string }>;
+  searchParams?: Promise<{ q?: string; taskStatus?: string; taskType?: string; docQ?: string; docScope?: string; tab?: string; notice?: string; error?: string; techSection?: string }>;
 }) {
   const user = await requireUser();
+  const canEdit = user.role !== 'VIEWER';
+  const canDelete = user.role === 'OWNER' || user.role === 'ADMIN';
   const { projectId } = await params;
   const taskParams = await searchParams;
   const tabValue = String(taskParams?.tab || '').trim();
   const notice = String(taskParams?.notice || '').trim();
+  const error = String(taskParams?.error || '').trim();
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -149,6 +152,7 @@ export default async function ProjectDetailPage({
         include: {
           task: {
             select: {
+              id: true,
               title: true,
             },
           },
@@ -159,11 +163,13 @@ export default async function ProjectDetailPage({
         include: {
           task: {
             select: {
+              id: true,
               title: true,
             },
           },
           workflow: {
             select: {
+              id: true,
               name: true,
             },
           },
@@ -196,6 +202,7 @@ export default async function ProjectDetailPage({
         include: {
           task: {
             select: {
+              id: true,
               title: true,
             },
           },
@@ -209,7 +216,6 @@ export default async function ProjectDetailPage({
   }
 
   const openTasks = project.tasks.filter((task) => task.status !== 'DONE').length;
-  const decisionTasks = project.tasks.filter((task) => task.type === 'CUSTOMER_DECISION').length;
   const activeMembers = project.members.filter((member) => member.isActive);
   const taskQuery = (taskParams?.q || '').trim().toLowerCase();
   const docQuery = (taskParams?.docQ || '').trim().toLowerCase();
@@ -279,12 +285,13 @@ export default async function ProjectDetailPage({
   const contractorDocuments = filteredDocuments.filter((document) => document.scope === 'CONTRACTOR' || document.scope === 'FINANCIAL');
   const generalDocuments = filteredDocuments.filter((document) => document.scope === 'GENERAL');
   const requiredPlanChecklist: ProjectPlanChecklistType[] = [
-    'ARCHITECTURAL',
-    'STRUCTURAL',
-    'ELECTRICAL',
-    'MECHANICAL',
-    'FACADE',
-    'INTERIOR',
+    'FLOOR_PLAN',
+    'SECTIONS',
+    'FACADES',
+    'MECHANICAL_PLAN',
+    'ELECTRICAL_PLAN',
+    'STRUCTURAL_PLAN',
+    'SITE_PLAN',
   ];
   const completedPlanChecklist = new Set(
     project.documents
@@ -295,17 +302,17 @@ export default async function ProjectDetailPage({
   const documentationReady = requiredPlanChecklist.every((item) => completedPlanChecklist.has(item));
   const projectIsActive = project.status !== 'PREPARATION';
   const projectFoundationTabs = [
-    { key: 'overview', label: 'Attekintes' },
-    { key: 'technical', label: 'Muszaki alapadatok' },
-    { key: 'documents', label: 'Dokumentacio' },
-    { key: 'workflows', label: 'Munkafolyamatok' },
-    { key: 'team', label: 'Szereplok' },
+    { key: 'overview', label: 'Allapot' },
+    { key: 'technical', label: 'Muszaki adatok' },
+    { key: 'documents', label: 'Dokumentumok' },
+    { key: 'workflows', label: 'Munkafazisok' },
+    { key: 'team', label: 'Emberek' },
   ] as const;
   const projectExecutionTabs = [
-    { key: 'tasks', label: 'Feladatok' },
-    { key: 'calendar', label: 'Naptar' },
-    { key: 'site-log', label: 'E-naplo' },
-    { key: 'issues', label: 'Hibajegyek' },
+    { key: 'tasks', label: 'Teendok' },
+    { key: 'calendar', label: 'Idopontok' },
+    { key: 'site-log', label: 'Napi naplo' },
+    { key: 'issues', label: 'Problemak' },
   ] as const;
   const projectTabs = [...projectFoundationTabs, ...projectExecutionTabs];
   const requestedTab = projectTabs.some((tab) => tab.key === tabValue) ? tabValue : 'overview';
@@ -337,110 +344,156 @@ export default async function ProjectDetailPage({
   const activeTechnicalGroups = getTechnicalGroups(activeTechnicalSection);
   const technicalCompletionCount = technicalFieldDefinitions.filter((field) => technicalValueMap.has(field.paramKey)).length;
   const technicalSummaryCards = buildTechnicalSummaryCards(project.technicalParameters, project.workflows);
-
+  const technicalCalculationGroups = buildTechnicalCalculationGroups(project.technicalParameters);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const hasTodaySiteLog = project.siteLogEntries.some((entry) => entry.entryDate >= startOfToday && entry.entryDate < endOfToday);
+  const nextStepCards = [
+    !documentationReady
+      ? {
+          title: 'Toltsd fel a hianyzo terveket',
+          text: 'A kivitelezes inditasa elott legyen meg a kotelezo tervcsomag.',
+          href: tabHref('documents'),
+          cta: 'Dokumentumok',
+          tone: 'amber' as const,
+        }
+      : null,
+    project.status === ProjectStatus.PREPARATION && documentationReady
+      ? {
+          title: 'Indithato a kivitelezes',
+          text: 'A dokumentumok rendben vannak, mar csak a projekt statuszat kell Kivitelezesre allitani.',
+          href: tabHref('overview'),
+          cta: 'Statusz valtasa',
+          tone: 'green' as const,
+        }
+      : null,
+    projectIsActive && !hasTodaySiteLog
+      ? {
+          title: 'Hianyzik a mai napi naplo',
+          text: 'Rogzitsd, kik voltak kint, mi keszult el, es volt-e problema.',
+          href: tabHref('site-log'),
+          cta: 'Napi naplo irasa',
+          tone: 'amber' as const,
+        }
+      : null,
+    overdueTasks.length
+      ? {
+          title: `${overdueTasks.length} lejart teendo van`,
+          text: 'Ezeket erdemes elsokent kiosztani, frissiteni vagy lezarni.',
+          href: tabHref('tasks'),
+          cta: 'Teendok megnyitasa',
+          tone: 'amber' as const,
+        }
+      : null,
+    openIssues.length
+      ? {
+          title: `${openIssues.length} nyitott problema blokkolhat`,
+          text: 'Adj felelos nevet, allapotot vagy kovetkezo lepest a problemakhoz.',
+          href: tabHref('issues'),
+          cta: 'Problemak kezelese',
+          tone: 'amber' as const,
+        }
+      : null,
+    !activeMembers.length
+      ? {
+          title: 'Nincs aktiv szereplo',
+          text: 'Add meg, kik dolgoznak ezen a projekten, hogy legyen kinek kiosztani a munkat.',
+          href: tabHref('team'),
+          cta: 'Emberek hozzaadasa',
+          tone: 'blue' as const,
+        }
+      : null,
+    !project.workflows.length
+      ? {
+          title: 'Nincsenek munkafazisok',
+          text: 'Bontsd ertheto munkacsomagokra a projektet: foldmunka, falazas, gepeszet, villany es tovabbi fazisok.',
+          href: tabHref('workflows'),
+          cta: 'Munkafazisok',
+          tone: 'blue' as const,
+        }
+      : null,
+    upcomingTasks.length && !overdueTasks.length
+      ? {
+          title: `${upcomingTasks.length} kozelgo teendo jon`,
+          text: 'A kovetkezo 3 nap teendoi mar latszanak, erdemes elore kiosztani oket.',
+          href: tabHref('tasks'),
+          cta: 'Kozelgo teendok',
+          tone: 'green' as const,
+        }
+      : null,
+  ].filter(Boolean).slice(0, 3) as Array<{
+    title: string;
+    text: string;
+    href: string;
+    cta: string;
+    tone: 'green' | 'blue' | 'amber';
+  }>;
   return (
     <OfficeShellV2
       title={project.name}
-      description="Projekt adatlap builderes V1 szemlelettel: alapadatok, szereplok, feladatok es naptar egy helyen."
+      description="Egy projekt teljes napi munkafelulete: allapot, emberek, dokumentumok, teendok, idopontok, napi naplo es problemak egy helyen."
       userName={user.name}
       toolbar={<Link href="/office/projects" className="btn-secondary">Vissza a projektekhez</Link>}
       focusLabel="Projektkozpont"
       quickActions={[
+        { href: tabHref('overview'), label: 'Allapot' },
         { href: technicalTabHref(ProjectTechnicalSection.BASICS), label: 'Muszaki alapok' },
-        { href: tabHref('documents'), label: 'Dokumentacio' },
-        { href: tabHref(projectIsActive ? 'tasks' : 'workflows'), label: projectIsActive ? 'Feladatok' : 'Munkafolyamatok' },
+        { href: tabHref('documents'), label: 'Dokumentumok' },
+        { href: tabHref('workflows'), label: 'Munkafazisok' },
+        { href: tabHref('team'), label: 'Szereplok' },
+        ...(projectIsActive
+          ? [
+              { href: tabHref('tasks'), label: 'Teendok' },
+              { href: tabHref('calendar'), label: 'Idopontok' },
+              { href: tabHref('site-log'), label: 'Napi naplo' },
+              { href: tabHref('issues'), label: 'Problemak' },
+              { href: `/office/projects/${project.id}/new/person`, label: 'Uj szereplo' },
+              { href: `/office/projects/${project.id}/new/task`, label: 'Uj teendo' },
+              { href: `/office/projects/${project.id}/new/event`, label: 'Uj idopont' },
+              { href: `/office/projects/${project.id}/new/issue`, label: 'Uj problema' },
+            ]
+          : []),
       ]}
     >
+      {error ? (
+        <InlineNotice tone="error" text={error} />
+      ) : notice && notice !== 'docs-required' ? (
+        <InlineNotice tone="success" text={notice} />
+      ) : null}
+
       {!documentationReady ? (
         <section className="rounded-[24px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
-          A projekt meg nincs dokumentaciosan keszen az aktiv kivitelezeshez. Eloszor toltsd fel a tervdokumentacios checklistat, utana valtsd a statuszt `Kivitelezes` allapotra.
+          A projekt meg nincs keszen az aktiv kivitelezeshez. Eloszor toltsd fel a kotelezo terveket, utana allitsd a statuszt Kivitelezesre.
         </section>
       ) : null}
 
       {notice === 'docs-required' ? (
         <section className="rounded-[24px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
-          Nem lehet a projektet aktiv kivitelezesbe tenni, amíg a tervdokumentacios csomag kotelezo elemei nincsenek feltoltve.
+          Nem lehet a projektet aktiv kivitelezesbe tenni, amig a kotelezo tervcsomag nincs feltoltve.
         </section>
       ) : null}
 
-      <section className="rounded-[24px] border border-slate-200 bg-slate-950 p-4 text-white shadow-[0_14px_36px_rgba(15,23,42,0.16)]">
-        <div className="space-y-4">
+      <section className="rounded-[28px] border border-[#dfe7da] bg-[linear-gradient(135deg,#f8faf6,#eef5e7)] p-5 shadow-[0_16px_40px_rgba(33,48,39,0.05)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-200">Projekt alap</div>
-            <div className="flex flex-wrap gap-3">
-              {projectFoundationTabs.map((tab) => (
-                <ProjectTabLink
-                  key={tab.key}
-                  href={tabHref(tab.key)}
-                  label={tab.label}
-                  active={activeTab === tab.key}
-                  tone="core"
-                />
-              ))}
-            </div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6f8a67]">Mit csinaljak most?</div>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Kovetkezo legfontosabb lepesek</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              Ez a blokk nem modulokban gondolkodik, hanem abban, hogy a projekt ma mit ker toled.
+            </p>
           </div>
-
-          <div className="rounded-[20px] border border-white/10 bg-white/5 p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-300">Aktiv kivitelezes</div>
-                <div className="mt-1 text-sm text-slate-300">
-                  {projectIsActive
-                    ? 'A projekt aktiv, az operativ nezetek hasznalhatok.'
-                    : 'Ezek a nezetek csak akkor elnek, ha a projekt statusza aktiv.'}
-                </div>
-              </div>
-              <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${projectIsActive ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200'}`}>
-                {projectIsActive ? 'Aktiv' : 'Zarolt'}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {projectExecutionTabs.map((tab) => (
-                <ProjectTabLink
-                  key={tab.key}
-                  href={projectIsActive ? tabHref(tab.key) : undefined}
-                  label={tab.label}
-                  active={activeTab === tab.key}
-                  disabled={!projectIsActive}
-                  tone="execution"
-                />
-              ))}
-            </div>
-          </div>
+          <Link href="/office" className="btn-secondary">Vissza a mai listahoz</Link>
         </div>
-      </section>
 
-      <section className="grid gap-4 md:grid-cols-5">
-        <Panel title="Statusz">
-          <form action={updateProjectStatusAction} className="grid gap-3">
-            <input type="hidden" name="projectId" value={project.id} />
-            <Badge tone={project.status === 'CLOSED' ? 'slate' : project.status === 'HANDOVER' ? 'amber' : 'blue'}>
-              {projectStatusLabel[project.status]}
-            </Badge>
-            <Select name="status" defaultValue={project.status}>
-              {Object.entries(projectStatusLabel).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </Select>
-            <button className="btn-secondary" type="submit">Projekt statusz mentese</button>
-          </form>
-        </Panel>
-        <Panel title="Szereplok">
-          <div className="text-3xl font-semibold tracking-tight text-slate-900">{project.members.length}</div>
-          <div className="mt-2 text-sm text-slate-500">Projektben rogzitett szereplok</div>
-        </Panel>
-        <Panel title="Nyitott feladatok">
-          <div className="text-3xl font-semibold tracking-tight text-slate-900">{openTasks}</div>
-          <div className="mt-2 text-sm text-slate-500">{decisionTasks} megrendeloi dontesre var</div>
-        </Panel>
-        <Panel title="Esemenyek">
-          <div className="text-3xl font-semibold tracking-tight text-slate-900">{project.events.length}</div>
-          <div className="mt-2 text-sm text-slate-500">Hataridok, munkakezdesek es atadasok</div>
-        </Panel>
-        <Panel title="Hibajegyek">
-          <div className="text-3xl font-semibold tracking-tight text-slate-900">{project.issues.length}</div>
-          <div className="mt-2 text-sm text-slate-500">{openIssues.length} nyitott problema</div>
-        </Panel>
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+          {nextStepCards.length ? nextStepCards.map((card) => (
+            <NextStepCard key={card.title} {...card} />
+          )) : (
+            <div className="rounded-[24px] border border-emerald-200 bg-white p-5 text-sm leading-6 text-emerald-900 lg:col-span-3">
+              Jelenleg nincs surgos teendo ezen a projekten. Ha megis dolgozol rajta ma, kezdd a napi naploval vagy nezd at a kovetkezo hataridoket.
+            </div>
+          )}
+        </div>
       </section>
 
       {activeTab === 'overview' ? (
@@ -463,7 +516,7 @@ export default async function ProjectDetailPage({
               </div>
             ) : null}
           </Panel>
-          <Panel title="E-naplo">
+          <Panel title="Napi naplo">
             <div className="space-y-3">
               {project.siteLogEntries.length ? project.siteLogEntries.map((entry) => (
                 <article key={entry.id} className="rounded-2xl border border-slate-200 p-4">
@@ -490,17 +543,72 @@ export default async function ProjectDetailPage({
             </div>
           </Panel>
 
-          <Panel title="Problemakezeles">
+          <Panel title="Problemak">
             <div className="space-y-6">
-              <IssueGroup title="Nyitott hibajegyek" issues={openIssues} projectId={project.id} />
-              <IssueGroup title="Folyamatban" issues={activeIssues} projectId={project.id} />
-              <IssueGroup title="Megoldva" issues={resolvedIssues} projectId={project.id} />
-              {!project.issues.length ? <EmptyState text="Ehhez a projekthez meg nincs hibajegy rogzitve." /> : null}
+              <IssueGroup title="Nyitott problemak" issues={openIssues} projectId={project.id} returnTo={tabHref('overview')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} canEdit={canEdit} canDelete={canDelete} />
+              <IssueGroup title="Folyamatban" issues={activeIssues} projectId={project.id} returnTo={tabHref('overview')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} canEdit={canEdit} canDelete={canDelete} />
+              <IssueGroup title="Megoldva" issues={resolvedIssues} projectId={project.id} returnTo={tabHref('overview')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} canEdit={canEdit} canDelete={canDelete} />
+              {!project.issues.length ? <EmptyState text="Ehhez a projekthez meg nincs problema rogzitve." /> : null}
             </div>
           </Panel>
         </div>
 
         <div className="space-y-6">
+          {canEdit ? <Panel title="Projektadatok szerkesztese">
+            <form action={updateProjectDetailsAction} className="grid gap-4">
+              <input type="hidden" name="projectId" value={project.id} />
+              <input type="hidden" name="returnTo" value={tabHref('overview')} />
+              <Field label="Projekt neve">
+                <Input name="name" defaultValue={project.name} required />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Projekt kod">
+                  <Input name="code" defaultValue={project.code || ''} />
+                </Field>
+                <Field label="Irsz">
+                  <Input name="postalCode" defaultValue={project.postalCode || ''} />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Varos">
+                  <Input name="city" defaultValue={project.city || ''} />
+                </Field>
+                <Field label="Cim">
+                  <Input name="addressLine" defaultValue={project.addressLine || ''} />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Kezdes">
+                  <Input type="date" name="startDate" defaultValue={toDateInput(project.startDate)} />
+                </Field>
+                <Field label="Varhato befejezes">
+                  <Input type="date" name="expectedEndDate" defaultValue={toDateInput(project.expectedEndDate)} />
+                </Field>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Tenyleges befejezes">
+                  <Input type="date" name="actualEndDate" defaultValue={toDateInput(project.actualEndDate)} />
+                </Field>
+                <div />
+              </div>
+              <Field label="Megrendelo neve">
+                <Input name="customerName" defaultValue={project.customerName || ''} />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Megrendelo telefon">
+                  <Input name="customerPhone" defaultValue={project.customerPhone || ''} />
+                </Field>
+                <Field label="Megrendelo email">
+                  <Input type="email" name="customerEmail" defaultValue={project.customerEmail || ''} />
+                </Field>
+              </div>
+              <Field label="Leiras">
+                <Textarea name="description" defaultValue={project.description || ''} placeholder="Projekt megjegyzesek, aktualis allapot, kulon fontos tudnivalok." />
+              </Field>
+              <button className="btn-primary" type="submit">Projektadatok mentese</button>
+            </form>
+          </Panel> : null}
+
           <Panel title="Kovetkezo lepesek">
             <div className="space-y-3">
               <Link href={technicalTabHref(ProjectTechnicalSection.BASICS)} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:border-orange-300 hover:bg-orange-50">
@@ -508,19 +616,19 @@ export default async function ProjectDetailPage({
                 <span>{technicalCompletionCount}/{technicalFieldDefinitions.length}</span>
               </Link>
               <Link href={tabHref('tasks')} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:border-orange-300 hover:bg-orange-50">
-                <span>Feladatok kezelese</span>
+                <span>Teendok kezelese</span>
                 <span>{openTasks}</span>
               </Link>
               <Link href={tabHref('workflows')} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:border-orange-300 hover:bg-orange-50">
-                <span>Munkafolyamatok</span>
+                <span>Munkafazisok</span>
                 <span>{project.workflows.length}</span>
               </Link>
               <Link href={tabHref('documents')} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:border-orange-300 hover:bg-orange-50">
-                <span>Dokumentacio</span>
+                <span>Dokumentumok</span>
                 <span>{project.documents.length}</span>
               </Link>
               <Link href={tabHref('calendar')} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-800 transition hover:border-orange-300 hover:bg-orange-50">
-                <span>Naptar</span>
+                <span>Idopontok</span>
                 <span>{project.events.length}</span>
               </Link>
             </div>
@@ -630,10 +738,36 @@ export default async function ProjectDetailPage({
               </div>
             )}
           </Panel>
+
+          {activeTechnicalSection === ProjectTechnicalSection.SUMMARIES ? (
+            <Panel title="Automatikus mennyisegi szamitasok">
+              <div className="space-y-4">
+                {technicalCalculationGroups.length ? technicalCalculationGroups.map((group) => (
+                  <article key={group.title} className="rounded-[24px] border border-slate-200 bg-slate-50/70 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="text-lg font-semibold tracking-tight text-slate-900">{group.title}</div>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">{group.note}</p>
+                      </div>
+                      <Badge tone="blue">{group.items.length} tetel</Badge>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {group.items.map((item) => (
+                        <div key={`${group.title}-${item.label}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</div>
+                          <div className="mt-2 text-base font-semibold text-slate-950">{item.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                )) : <EmptyState text="A megadott muszaki adatokbol meg nem keszult szamithato mennyisegi osszesites." />}
+              </div>
+            </Panel>
+          ) : null}
         </div>
 
         <div className="space-y-6">
-          <Panel title="Munkacsomag-osszefoglalok">
+          <Panel title="Munkafazis osszefoglalok">
             <div className="space-y-3">
               {technicalSummaryCards.map((summary) => (
                 <article key={summary.key} className="rounded-2xl border border-slate-200 p-4">
@@ -643,8 +777,8 @@ export default async function ProjectDetailPage({
                   </div>
                   <div className="mt-2 text-sm text-slate-500">
                     {summary.relatedWorkflow
-                      ? `Kapcsolt munkafolyamat: ${summary.relatedWorkflow.name}`
-                      : 'Meg nincs hozzarendelt munkafolyamat.'}
+                      ? `Kapcsolt munkafazis: ${summary.relatedWorkflow.name}`
+                      : 'Meg nincs hozzarendelt munkafazis.'}
                   </div>
                 </article>
               ))}
@@ -656,16 +790,16 @@ export default async function ProjectDetailPage({
               <div className="rounded-2xl bg-slate-50 p-4">
                 <div className="font-medium text-slate-900">Mit tud most ez a blokk?</div>
                 <p className="mt-2 leading-6">
-                  A rogzitett muszaki parameterekbol munkacsomag-szintu osszefoglalok keszulnek, amelyek alapot adnak a workflow-khoz, az ajanlatkereshez es a szerzodeses muszaki tartalomhoz.
+                  A rogzitett muszaki parameterekbol mar automatikus mennyisegi becslesek keszulnek az alapozastol a burkolasig, ezekre lehet a szakipari workflow-kat es az ajanlatkeresi csomagokat raepiteni.
                 </p>
               </div>
               <div className="rounded-2xl bg-orange-50 p-4 text-orange-950">
                 <div className="font-medium">Kovetkezo epitesi kor</div>
                 <p className="mt-2 leading-6">
-                  Innen a legerosebb kovetkezo lepes a workflow-szintu adatlap lesz, ahol a muszaki alapadatok automatikusan rahuzhatok az adott munkafolyamatra es alvallalkozora.
+                  A projektinditasnal automatikusan letrejott az alap szakipari munkafazis-lista. Innen mar csak a megfelelo alvallalkozot, dokumentumokat es teendoket kell hozzarendelni.
                 </p>
               </div>
-              <Link href={tabHref('workflows')} className="btn-primary inline-flex w-full justify-center">Munkafolyamatok megnyitasa</Link>
+              <Link href={tabHref('workflows')} className="btn-primary inline-flex w-full justify-center">Munkafazisok megnyitasa</Link>
             </div>
           </Panel>
         </div>
@@ -673,8 +807,8 @@ export default async function ProjectDetailPage({
       ) : null}
 
       {activeTab === 'tasks' ? (
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="Feladatok">
+      <section className="mt-6">
+        <Panel title="Teendok">
           <form className="mb-5 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[1fr_220px_220px_auto] sm:items-end">
             <Field label="Kereses">
               <Input name="q" defaultValue={taskQuery} placeholder="Feladat, leiras, felelos..." />
@@ -704,7 +838,7 @@ export default async function ProjectDetailPage({
           </form>
 
           <div className="mb-4 text-sm text-slate-500">
-            {filteredTasks.length} feladat latszik
+            {filteredTasks.length} teendo latszik
             {taskStatusFilter ? ` - ${taskStatusLabel[taskStatusFilter]}` : ''}
             {taskTypeFilter ? ` - ${taskTypeLabel[taskTypeFilter]}` : ''}
             {taskQuery ? ` - kereses: "${taskQuery}"` : ''}
@@ -713,95 +847,22 @@ export default async function ProjectDetailPage({
           <div className="space-y-6">
             {filteredTasks.length ? (
               <>
-                <TaskGroup title="Lejart feladatok" tasks={overdueTasks} projectId={project.id} />
-                <TaskGroup title="Mai / kozelgo feladatok" tasks={upcomingTasks} projectId={project.id} />
-                <TaskGroup title="Megrendeloi dontesek" tasks={decisionTypeTasks} projectId={project.id} />
-                <TaskGroup title="Tovabbi aktiv feladatok" tasks={remainingTasks} projectId={project.id} />
-                <TaskGroup title="Kesz feladatok" tasks={doneTasks} projectId={project.id} />
+                <TaskGroup title="Lejart teendok" tasks={overdueTasks} projectId={project.id} returnTo={tabHref('tasks')} />
+                <TaskGroup title="Mai / kozelgo teendok" tasks={upcomingTasks} projectId={project.id} returnTo={tabHref('tasks')} />
+                <TaskGroup title="Megrendeloi dontesek" tasks={decisionTypeTasks} projectId={project.id} returnTo={tabHref('tasks')} />
+                <TaskGroup title="Tovabbi aktiv teendok" tasks={remainingTasks} projectId={project.id} returnTo={tabHref('tasks')} />
+                <TaskGroup title="Kesz teendok" tasks={doneTasks} projectId={project.id} returnTo={tabHref('tasks')} />
               </>
-            ) : <EmptyState text="Nincs a szuroknek megfelelo projektfeladat." />}
+            ) : <EmptyState text="Nincs a szuroknek megfelelo projektteendo." />}
           </div>
         </Panel>
 
-        <div id="uj-feladat">
-        <Panel title="Uj projektfeladat">
-            <form action={createProjectTaskAction} className="grid gap-4">
-              <input type="hidden" name="projectId" value={project.id} />
-              <Field label="Feladat cime">
-                <Input name="title" placeholder="Pl. Aljzatbeton elokeszitese" required />
-              </Field>
-              <Field label="Feladat tipusa">
-                <Select name="type" defaultValue={ProjectTaskType.EXECUTION}>
-                  {Object.entries(taskTypeLabel).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </Select>
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Prioritas">
-                  <Select name="priority" defaultValue={ProjectTaskPriority.MEDIUM}>
-                    {Object.entries(taskPriorityLabel).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Statusz">
-                  <Select name="status" defaultValue={ProjectTaskStatus.NEW}>
-                    {Object.entries(taskStatusLabel).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Felelos">
-                  <Select name="assigneeMemberId" defaultValue="">
-                    <option value="">Nincs kiosztva</option>
-                    {activeMembers.map((member) => (
-                      <option key={member.id} value={member.id}>{member.name} - {memberRoleLabel[member.role]}</option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Munkafolyamat">
-                  <Select name="workflowId" defaultValue="">
-                    <option value="">Nincs workflow-hoz kotve</option>
-                    {project.workflows.map((workflow) => (
-                      <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Hatarido">
-                  <Input type="datetime-local" name="dueAt" />
-                </Field>
-                <div />
-              </div>
-              <Field label="Leiras">
-                <Textarea name="description" placeholder="Mit kell elvegezni, milyen anyaggal, milyen dontes vagy feltetel kapcsolodik hozza?" />
-              </Field>
-              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
-                <input type="checkbox" name="approvalRequired" className="size-4 rounded border-slate-300" />
-                Jovahagyast igenyel
-              </label>
-              <Field label="Jovahagyo">
-                  <Select name="approvedByMemberId" defaultValue="">
-                  <option value="">Nincs kijelolve</option>
-                  {activeMembers.map((member) => (
-                    <option key={member.id} value={member.id}>{member.name} - {memberRoleLabel[member.role]}</option>
-                  ))}
-                </Select>
-              </Field>
-              <button className="btn-primary" type="submit">Feladat letrehozasa</button>
-            </form>
-          </Panel>
-        </div>
       </section>
       ) : null}
 
       {activeTab === 'workflows' ? (
       <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="Munkafolyamatok">
+        <Panel title="Munkafazisok">
             <div className="space-y-3">
               {project.workflows.length ? project.workflows.map((workflow) => (
                 <article key={workflow.id} className="rounded-2xl border border-slate-200 p-4">
@@ -821,6 +882,14 @@ export default async function ProjectDetailPage({
                       <Link href={`/office/projects/${project.id}/workflows/${workflow.id}`} className="btn-secondary">
                         Megnyitas
                       </Link>
+            <form action={deleteProjectWorkflowAction}>
+              <input type="hidden" name="projectId" value={project.id} />
+              <input type="hidden" name="workflowId" value={workflow.id} />
+              <input type="hidden" name="returnTo" value={tabHref('workflows')} />
+              <ConfirmSubmitButton className="btn-secondary" message="Biztosan torlod ezt a munkafolyamatot?">
+                Torles
+              </ConfirmSubmitButton>
+            </form>
                     </div>
                   </div>
                   <div className="mt-3 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
@@ -840,14 +909,15 @@ export default async function ProjectDetailPage({
                     </div>
                   ) : null}
                 </article>
-              )) : <EmptyState text="Ehhez a projekthez meg nincs munkafolyamat rogzitve." />}
+                )) : <EmptyState text="Ehhez a projekthez meg nincs munkafazis rogzitve." />}
             </div>
           </Panel>
 
-          <Panel title="Uj munkafolyamat">
+          <Panel title="Uj munkafazis">
             <form action={createProjectWorkflowAction} className="grid gap-4">
               <input type="hidden" name="projectId" value={project.id} />
-              <Field label="Munkafolyamat neve">
+              <input type="hidden" name="returnTo" value={tabHref('workflows')} />
+              <Field label="Munkafazis neve">
                 <Input name="name" placeholder="Pl. Homlokzati szinezes, nyilaszaro beepites, villanyszereles 1. kor" required />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -894,15 +964,15 @@ export default async function ProjectDetailPage({
               <Field label="Kivitelezesi megjegyzesek / workflow leiras">
                 <Textarea name="specificationNotes" placeholder="Milyen dokumentumok tartoznak ide, milyen teljesitesi igazolas kell, milyen sorrendben kell haladni, mire kell figyelnie a kivitelezonek." />
               </Field>
-              <button className="btn-primary" type="submit">Munkafolyamat rogzitese</button>
+              <button className="btn-primary" type="submit">Munkafazis rogzitese</button>
             </form>
           </Panel>
       </section>
       ) : null}
 
       {activeTab === 'team' ? (
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <Panel title="Szereplok">
+      <section className="mt-6">
+          <Panel title="Emberek">
             <div className="space-y-3">
               {project.members.length ? project.members.map((member) => (
                 <article key={member.id} className="rounded-2xl border border-slate-200 p-4">
@@ -921,119 +991,51 @@ export default async function ProjectDetailPage({
                     <div className="mt-1">{permissionLevelLabel[member.permissionLevel]}</div>
                   </div>
                   {member.notes ? <p className="mt-3 text-sm leading-6 text-slate-600">{member.notes}</p> : null}
-                  <form action={updateProjectMemberActivityAction} className="mt-4">
-                    <input type="hidden" name="projectId" value={project.id} />
-                    <input type="hidden" name="memberId" value={member.id} />
-                    <input type="hidden" name="isActive" value={member.isActive ? 'false' : 'true'} />
-                    <button className="btn-secondary" type="submit">
-                      {member.isActive ? 'Inaktivva teszem' : 'Aktivalom'}
-                    </button>
-                  </form>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {member.role === ProjectRole.SUBCONTRACTOR ? (
+                      <Link href={`/office/subcontractors/${member.id}`} className="btn-secondary">
+                        Alvallalkozoi nezet
+                      </Link>
+                    ) : null}
+                    <form action={updateProjectMemberActivityAction}>
+                      <input type="hidden" name="projectId" value={project.id} />
+                      <input type="hidden" name="memberId" value={member.id} />
+                      <input type="hidden" name="isActive" value={member.isActive ? 'false' : 'true'} />
+                      <input type="hidden" name="returnTo" value={tabHref('team')} />
+                      <button className="btn-secondary" type="submit">
+                        {member.isActive ? 'Inaktivva teszem' : 'Aktivalom'}
+                      </button>
+                    </form>
+                  </div>
                 </article>
-              )) : <EmptyState text="Ehhez a projekthez meg nincs szereplo felvive." />}
+              )) : <EmptyState text="Ehhez a projekthez meg nincs ember felvive." />}
             </div>
           </Panel>
 
-          <Panel title="Uj szereplo">
-            <form action={createProjectMemberAction} className="grid gap-4">
-              <input type="hidden" name="projectId" value={project.id} />
-              <Field label="Nev">
-                <Input name="name" placeholder="Pl. Kiss Peter" required />
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Szerepkor">
-                  <Select name="role" defaultValue={ProjectRole.SUBCONTRACTOR}>
-                    {Object.entries(memberRoleLabel).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Jogosultsag">
-                  <Select name="permissionLevel" defaultValue={ProjectPermissionLevel.CONTRIBUTE}>
-                    {Object.entries(permissionLevelLabel).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Telefonszam">
-                  <Input name="phone" placeholder="+36..." />
-                </Field>
-                <Field label="Email">
-                  <Input type="email" name="email" placeholder="email@pelda.hu" />
-                </Field>
-              </div>
-              <Field label="Megjegyzes">
-                <Textarea name="notes" placeholder="Pl. villanyszerelo, kulcs nala van, csak hetfon es szerdan elerheto." />
-              </Field>
-              <button className="btn-primary" type="submit">Szereplo hozzaadasa</button>
-            </form>
-          </Panel>
       </section>
       ) : null}
 
       {activeTab === 'calendar' ? (
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <Panel title="Projekt naptar">
+      <section className="mt-6">
+          <Panel title="Projekt idopontok">
             <div className="space-y-6">
               {project.events.length ? (
                 <>
-                  <EventGroup title="Lejart esemenyek" events={overdueEvents} />
-                  <EventGroup title="Kovetkezo 7 nap" events={upcomingEvents} />
-                  <EventGroup title="Feladathoz kotott esemenyek" events={taskLinkedEvents} />
-                  <EventGroup title="Tovabbi esemenyek" events={remainingEvents} />
+                  <EventGroup title="Lejart idopontok" events={overdueEvents} projectId={project.id} returnTo={tabHref('calendar')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} />
+                  <EventGroup title="Kovetkezo 7 nap" events={upcomingEvents} projectId={project.id} returnTo={tabHref('calendar')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} />
+                  <EventGroup title="Teendohoz kotott idopontok" events={taskLinkedEvents} projectId={project.id} returnTo={tabHref('calendar')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} />
+                  <EventGroup title="Tovabbi idopontok" events={remainingEvents} projectId={project.id} returnTo={tabHref('calendar')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} />
                 </>
-              ) : <EmptyState text="Ehhez a projekthez meg nincs esemeny rogzitve." />}
+              ) : <EmptyState text="Ehhez a projekthez meg nincs idopont rogzitve." />}
             </div>
           </Panel>
 
-          <Panel title="Uj esemeny">
-            <form action={createProjectEventAction} className="grid gap-4">
-              <input type="hidden" name="projectId" value={project.id} />
-              <Field label="Esemeny cime">
-                <Input name="title" placeholder="Pl. Hetfoi munkakezdes" required />
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Tipus">
-                  <Select name="type" defaultValue={ProjectEventType.MEETING}>
-                    {Object.entries(eventTypeLabel).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Kapcsolodo feladat">
-                  <Select name="taskId" defaultValue="">
-                    <option value="">Nincs hozzakotve feladathoz</option>
-                    {project.tasks.map((task) => (
-                      <option key={task.id} value={task.id}>{task.title}</option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Kezdes">
-                  <Input type="datetime-local" name="startsAt" required />
-                </Field>
-                <Field label="Vege">
-                  <Input type="datetime-local" name="endsAt" />
-                </Field>
-              </div>
-              <Field label="Helyszin">
-                <Input name="location" placeholder="Pl. Kecskemet, Fo utca 12." />
-              </Field>
-              <Field label="Megjegyzes">
-                <Textarea name="notes" placeholder="Pl. megrendeloi bejaras, anyag atvetel, alapozas ellenorzes." />
-              </Field>
-              <button className="btn-primary" type="submit">Esemeny letrehozasa</button>
-            </form>
-          </Panel>
       </section>
       ) : null}
 
       {activeTab === 'documents' ? (
       <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="Dokumentacio">
+        <Panel title="Dokumentumok">
           <div className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {requiredPlanChecklist.map((item) => (
               <div key={item} className={`rounded-2xl border p-4 ${completedPlanChecklist.has(item) ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
@@ -1048,7 +1050,7 @@ export default async function ProjectDetailPage({
             <Field label="Kereses">
               <Input name="docQ" defaultValue={docQuery} placeholder="Dokumentum, link, cimke, feladat..." />
             </Field>
-            <Field label="Scope">
+            <Field label="Dokumentum tipusa">
               <Select name="docScope" defaultValue={docScopeFilter}>
                 <option value="">Minden dokumentum</option>
                 {Object.entries(documentScopeLabel).map(([value, label]) => (
@@ -1071,23 +1073,24 @@ export default async function ProjectDetailPage({
           </div>
 
           <div className="space-y-3">
-            <DocumentGroup title="Tervdokumentacios csomag" documents={planDocuments} />
-            <DocumentGroup title="Munkafolyamat dokumentumok" documents={workflowDocuments} />
-            <DocumentGroup title="Kivitelezoi / penzugyi dokumentumok" documents={contractorDocuments} />
-            <DocumentGroup title="Altalanos dokumentumok" documents={generalDocuments} />
+            <DocumentGroup title="Tervdokumentacios csomag" documents={planDocuments} projectId={project.id} returnTo={tabHref('documents')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} workflowOptions={project.workflows.map((workflow) => ({ id: workflow.id, name: workflow.name }))} />
+            <DocumentGroup title="Munkafazis dokumentumok" documents={workflowDocuments} projectId={project.id} returnTo={tabHref('documents')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} workflowOptions={project.workflows.map((workflow) => ({ id: workflow.id, name: workflow.name }))} />
+            <DocumentGroup title="Kivitelezoi / penzugyi dokumentumok" documents={contractorDocuments} projectId={project.id} returnTo={tabHref('documents')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} workflowOptions={project.workflows.map((workflow) => ({ id: workflow.id, name: workflow.name }))} />
+            <DocumentGroup title="Altalanos dokumentumok" documents={generalDocuments} projectId={project.id} returnTo={tabHref('documents')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} workflowOptions={project.workflows.map((workflow) => ({ id: workflow.id, name: workflow.name }))} />
             {!filteredDocuments.length ? <EmptyState text="Ehhez a projekthez meg nincs a szuroknek megfelelo dokumentum." /> : null}
           </div>
         </Panel>
 
         <div id="uj-dokumentum">
-        <Panel title="Uj dokumentum / hivatkozas">
+        <Panel title="Uj dokumentum / link">
           <form action={createProjectDocumentAction} className="grid gap-4">
             <input type="hidden" name="projectId" value={project.id} />
+            <input type="hidden" name="returnTo" value={tabHref('documents')} />
             <Field label="Cim">
               <Input name="title" placeholder="Pl. statikai terv, szerzodes PDF, helyszini fotomappa" required />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Dokumentum scope">
+              <Field label="Hova tartozik?">
                 <Select name="scope" defaultValue={ProjectDocumentScope.PLAN_PACKAGE}>
                   {Object.entries(documentScopeLabel).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
@@ -1104,7 +1107,7 @@ export default async function ProjectDetailPage({
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Terv checklista elem">
-                <Select name="planChecklistType" defaultValue={ProjectPlanChecklistType.ARCHITECTURAL}>
+                <Select name="planChecklistType" defaultValue={ProjectPlanChecklistType.FLOOR_PLAN}>
                   {Object.entries(planChecklistLabel).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
@@ -1119,9 +1122,9 @@ export default async function ProjectDetailPage({
                 </Select>
               </Field>
             </div>
-            <Field label="Kapcsolodo munkafolyamat">
+              <Field label="Kapcsolodo munkafazis">
               <Select name="workflowId" defaultValue="">
-                <option value="">Nincs munkafolyamathoz kotve</option>
+                  <option value="">Nincs munkafazishoz kotve</option>
                 {project.workflows.map((workflow) => (
                   <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
                 ))}
@@ -1145,7 +1148,7 @@ export default async function ProjectDetailPage({
 
       {activeTab === 'site-log' ? (
       <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="E-naplo">
+        <Panel title="Napi naplo">
           <div className="space-y-3">
             {project.siteLogEntries.length ? project.siteLogEntries.map((entry) => (
               <article key={entry.id} className="rounded-2xl border border-slate-200 p-4">
@@ -1168,14 +1171,15 @@ export default async function ProjectDetailPage({
                   </div>
                 ) : null}
               </article>
-            )) : <EmptyState text="Ehhez a projekthez meg nincs e-naplo bejegyzes." />}
+            )) : <EmptyState text="Ehhez a projekthez meg nincs napi naplo bejegyzes." />}
           </div>
         </Panel>
 
         <div id="uj-enaplo">
-        <Panel title="Uj e-naplo bejegyzes">
+        <Panel title="Uj napi naplo bejegyzes">
             <form action={createProjectSiteLogEntryAction} className="grid gap-4">
               <input type="hidden" name="projectId" value={project.id} />
+              <input type="hidden" name="returnTo" value={tabHref('site-log')} />
               <Field label="Datum">
                 <Input type="date" name="entryDate" required />
               </Field>
@@ -1191,7 +1195,7 @@ export default async function ProjectDetailPage({
               <Field label="Idojaras">
                 <Input name="weather" placeholder="Pl. napos, 18 C, eros szel" />
               </Field>
-              <button className="btn-primary" type="submit">E-naplo rogzitese</button>
+              <button className="btn-primary" type="submit">Napi naplo rogzitese</button>
             </form>
           </Panel>
         </div>
@@ -1199,59 +1203,16 @@ export default async function ProjectDetailPage({
       ) : null}
 
       {activeTab === 'issues' ? (
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="Hibajegyek">
+      <section className="mt-6">
+        <Panel title="Problemak">
           <div className="space-y-6">
-            <IssueGroup title="Nyitott hibajegyek" issues={openIssues} projectId={project.id} />
-            <IssueGroup title="Folyamatban" issues={activeIssues} projectId={project.id} />
-            <IssueGroup title="Megoldva" issues={resolvedIssues} projectId={project.id} />
-            {!project.issues.length ? <EmptyState text="Ehhez a projekthez meg nincs hibajegy rogzitve." /> : null}
+            <IssueGroup title="Nyitott problemak" issues={openIssues} projectId={project.id} returnTo={tabHref('issues')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} canEdit={canEdit} canDelete={canDelete} />
+            <IssueGroup title="Folyamatban" issues={activeIssues} projectId={project.id} returnTo={tabHref('issues')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} canEdit={canEdit} canDelete={canDelete} />
+            <IssueGroup title="Megoldva" issues={resolvedIssues} projectId={project.id} returnTo={tabHref('issues')} taskOptions={project.tasks.map((task) => ({ id: task.id, title: task.title }))} canEdit={canEdit} canDelete={canDelete} />
+            {!project.issues.length ? <EmptyState text="Ehhez a projekthez meg nincs problema rogzitve." /> : null}
           </div>
         </Panel>
 
-        <div>
-          <Panel title="Uj hibajegy">
-            <form action={createProjectIssueAction} className="grid gap-4">
-              <input type="hidden" name="projectId" value={project.id} />
-              <Field label="Cim">
-                <Input name="title" placeholder="Pl. betonminosegi problema az alapnal" required />
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Kategoria">
-                  <Select name="category" defaultValue={ProjectIssueCategory.TECHNICAL}>
-                    {Object.entries(issueCategoryLabel).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Statusz">
-                  <Select name="status" defaultValue={ProjectIssueStatus.OPEN}>
-                    {Object.entries(issueStatusLabel).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Kapcsolodo feladat">
-                  <Select name="taskId" defaultValue="">
-                    <option value="">Nincs hozzakotve feladathoz</option>
-                    {project.tasks.map((task) => (
-                      <option key={task.id} value={task.id}>{task.title}</option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Felelos / kapcsolattarto">
-                  <Input name="responsibleName" placeholder="Pl. projektvezeto vagy alvallalkozo neve" />
-                </Field>
-              </div>
-              <Field label="Leiras">
-                <Textarea name="description" placeholder="Mi a problema, mi latszik a helyszinen, mi blokkolodik miatta, kell-e dontes vagy uj anyag?" />
-              </Field>
-              <button className="btn-primary" type="submit">Hibajegy letrehozasa</button>
-            </form>
-          </Panel>
-        </div>
       </section>
       ) : null}
     </OfficeShellV2>
@@ -1368,10 +1329,41 @@ function ProjectTabLink({
   );
 }
 
+function NextStepCard({
+  title,
+  text,
+  href,
+  cta,
+  tone,
+}: {
+  title: string;
+  text: string;
+  href: string;
+  cta: string;
+  tone: 'green' | 'blue' | 'amber';
+}) {
+  const toneClass = tone === 'green'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+    : tone === 'blue'
+      ? 'border-sky-200 bg-sky-50 text-sky-950'
+      : 'border-amber-200 bg-amber-50 text-amber-950';
+
+  return (
+    <article className={`rounded-[24px] border p-5 ${toneClass}`}>
+      <div className="text-lg font-semibold tracking-tight">{title}</div>
+      <p className="mt-2 text-sm leading-6 text-current opacity-75">{text}</p>
+      <Link href={href} className="mt-4 inline-flex min-h-11 items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-[0_10px_22px_rgba(33,48,39,0.08)]">
+        {cta}
+      </Link>
+    </article>
+  );
+}
+
 function TaskGroup({
   title,
   tasks,
   projectId,
+  returnTo,
 }: {
   title: string;
   tasks: Array<{
@@ -1382,12 +1374,14 @@ function TaskGroup({
     status: ProjectTaskStatus;
     priority: ProjectTaskPriority;
     dueAt: Date | null;
+    approvedAt: Date | null;
     approvalRequired: boolean;
     assignee: { name: string } | null;
     approvedBy: { name: string } | null;
     workflow: { name: string } | null;
   }>;
   projectId: string;
+  returnTo: string;
 }) {
   if (!tasks.length) return null;
 
@@ -1416,12 +1410,23 @@ function TaskGroup({
             <div className="mt-3 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
               <InfoRow label="Felelos" value={task.assignee?.name || 'Nincs kiosztva'} compact />
               <InfoRow label="Hatarido" value={formatDateTime(task.dueAt)} compact />
-              <InfoRow label="Jovahagyo" value={task.approvedBy?.name || (task.approvalRequired ? 'Meg nem tortent' : 'Nem szukseges')} compact />
+              <InfoRow
+                label="Jovahagyas"
+                value={task.approvalRequired
+                  ? task.status === 'DONE' && task.approvedAt
+                    ? `${task.approvedBy?.name || 'Rogzitett jovahagyas'} | ${formatDateTime(task.approvedAt)}`
+                    : task.status === 'WAITING_APPROVAL'
+                      ? `${task.approvedBy?.name || 'Nincs kijelolve'} | Jovahagyasra var`
+                      : `${task.approvedBy?.name || 'Nincs kijelolve'} | Meg nem tortent`
+                  : 'Nem szukseges'}
+                compact
+              />
             </div>
             {task.description ? <p className="mt-3 text-sm leading-6 text-slate-600">{task.description}</p> : null}
             <form action={updateProjectTaskStatusAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <input type="hidden" name="projectId" value={projectId} />
               <input type="hidden" name="taskId" value={task.id} />
+              <input type="hidden" name="returnTo" value={returnTo} />
               <Field label="Gyors statuszvaltas">
                 <Select name="status" defaultValue={task.status}>
                   {Object.entries(taskStatusLabel).map(([value, label]) => (
@@ -1429,7 +1434,9 @@ function TaskGroup({
                   ))}
                 </Select>
               </Field>
-              <button className="btn-secondary" type="submit">Frissites</button>
+              <button className="btn-secondary" type="submit">
+                {task.approvalRequired && task.status === 'WAITING_APPROVAL' ? 'Jovahagyas rogzitese' : 'Frissites'}
+              </button>
             </form>
           </article>
         ))}
@@ -1441,6 +1448,9 @@ function TaskGroup({
 function EventGroup({
   title,
   events,
+  projectId,
+  returnTo,
+  taskOptions,
 }: {
   title: string;
   events: Array<{
@@ -1451,8 +1461,11 @@ function EventGroup({
     endsAt: Date | null;
     location: string | null;
     notes: string | null;
-    task: { title: string } | null;
+    task: { id: string; title: string } | null;
   }>;
+  projectId: string;
+  returnTo: string;
+  taskOptions: Array<{ id: string; title: string }>;
 }) {
   if (!events.length) return null;
 
@@ -1475,6 +1488,59 @@ function EventGroup({
               <div>Kapcsolodo feladat: {event.task?.title || 'Nincs hozzakotve'}</div>
             </div>
             {event.notes ? <p className="mt-3 text-sm leading-6 text-slate-600">{event.notes}</p> : null}
+            <details className="mt-4 rounded-2xl border border-slate-200 bg-slate-50">
+              <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700">
+                Szerkesztes
+              </summary>
+              <form action={updateProjectEventAction} className="grid gap-3 border-t border-slate-200 p-4">
+                <input type="hidden" name="projectId" value={projectId} />
+                <input type="hidden" name="eventId" value={event.id} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <Field label="Esemeny cime">
+                  <Input name="title" defaultValue={event.title} required />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Tipus">
+                    <Select name="type" defaultValue={event.type}>
+                      {Object.entries(eventTypeLabel).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Kapcsolodo feladat">
+                    <Select name="taskId" defaultValue={event.task?.id || ''}>
+                      <option value="">Nincs hozzakotve feladathoz</option>
+                      {taskOptions.map((task) => (
+                        <option key={task.id} value={task.id}>{task.title}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Kezdes">
+                    <Input type="datetime-local" name="startsAt" defaultValue={toDateTimeLocalInput(event.startsAt)} required />
+                  </Field>
+                  <Field label="Vege">
+                    <Input type="datetime-local" name="endsAt" defaultValue={toDateTimeLocalInput(event.endsAt)} />
+                  </Field>
+                </div>
+                <Field label="Helyszin">
+                  <Input name="location" defaultValue={event.location || ''} />
+                </Field>
+                <Field label="Megjegyzes">
+                  <Textarea name="notes" defaultValue={event.notes || ''} />
+                </Field>
+                <button className="btn-secondary" type="submit">Esemeny mentese</button>
+              </form>
+            </details>
+            <form action={deleteProjectEventAction} className="mt-4">
+              <input type="hidden" name="projectId" value={projectId} />
+              <input type="hidden" name="eventId" value={event.id} />
+              <input type="hidden" name="returnTo" value={returnTo} />
+              <ConfirmSubmitButton className="btn-secondary" message="Biztosan torlod ezt az esemenyt?">
+                Esemeny torlese
+              </ConfirmSubmitButton>
+            </form>
           </article>
         ))}
       </div>
@@ -1485,6 +1551,10 @@ function EventGroup({
 function DocumentGroup({
   title,
   documents,
+  projectId,
+  returnTo,
+  taskOptions,
+  workflowOptions,
 }: {
   title: string;
   documents: Array<{
@@ -1497,9 +1567,13 @@ function DocumentGroup({
     tags: string | null;
     notes: string | null;
     createdAt: Date;
-    task: { title: string } | null;
-    workflow: { name: string } | null;
+    task: { id: string; title: string } | null;
+    workflow: { id: string; name: string } | null;
   }>;
+  projectId: string;
+  returnTo: string;
+  taskOptions: Array<{ id: string; title: string }>;
+  workflowOptions: Array<{ id: string; name: string }>;
 }) {
   if (!documents.length) return null;
 
@@ -1522,8 +1596,8 @@ function DocumentGroup({
               </Badge>
             </div>
             <div className="mt-3 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-              <InfoRow label="Feladat" value={document.task?.title || 'Nincs feladathoz kotve'} compact />
-              <InfoRow label="Munkafolyamat" value={document.workflow?.name || 'Nincs workflow-hoz kotve'} compact />
+              <InfoRow label="Teendo" value={document.task?.title || 'Nincs teendohoz kotve'} compact />
+              <InfoRow label="Munkafazis" value={document.workflow?.name || 'Nincs munkafazishoz kotve'} compact />
             </div>
             <a href={document.linkUrl} target="_blank" rel="noreferrer" className="mt-3 block break-all text-sm font-semibold text-orange-700 hover:text-orange-800">
               Megnyitas: {document.linkUrl}
@@ -1531,6 +1605,79 @@ function DocumentGroup({
             {document.tags ? <div className="mt-2 text-sm text-slate-500">Cimkek: {document.tags}</div> : null}
             {document.notes ? <p className="mt-3 text-sm leading-6 text-slate-600">{document.notes}</p> : null}
             <div className="mt-3 text-xs text-slate-500">Rogzitve: {formatDateTime(document.createdAt)}</div>
+            <details className="mt-4 rounded-2xl border border-slate-200 bg-slate-50">
+              <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700">
+                Szerkesztes
+              </summary>
+              <form action={updateProjectDocumentAction} className="grid gap-3 border-t border-slate-200 p-4">
+                <input type="hidden" name="projectId" value={projectId} />
+                <input type="hidden" name="documentId" value={document.id} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <Field label="Cim">
+                  <Input name="title" defaultValue={document.title} required />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Dokumentum scope">
+                    <Select name="scope" defaultValue={document.scope}>
+                      {Object.entries(documentScopeLabel).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Kategoria">
+                    <Select name="category" defaultValue={document.category}>
+                      {Object.entries(documentCategoryLabel).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Terv checklista elem">
+                    <Select name="planChecklistType" defaultValue={document.planChecklistType || ''}>
+                      <option value="">Nincs megadva</option>
+                      {Object.entries(planChecklistLabel).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Kapcsolodo teendo">
+                    <Select name="taskId" defaultValue={document.task?.id || ''}>
+                      <option value="">Nincs teendohoz kotve</option>
+                      {taskOptions.map((task) => (
+                        <option key={task.id} value={task.id}>{task.title}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+                <Field label="Kapcsolodo munkafazis">
+                  <Select name="workflowId" defaultValue={document.workflow?.id || ''}>
+                    <option value="">Nincs munkafazishoz kotve</option>
+                    {workflowOptions.map((workflow) => (
+                      <option key={workflow.id} value={workflow.id}>{workflow.name}</option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Link vagy eleresi ut">
+                  <Input name="linkUrl" defaultValue={document.linkUrl} required />
+                </Field>
+                <Field label="Cimkek">
+                  <Input name="tags" defaultValue={document.tags || ''} />
+                </Field>
+                <Field label="Megjegyzes">
+                  <Textarea name="notes" defaultValue={document.notes || ''} />
+                </Field>
+                <button className="btn-secondary" type="submit">Dokumentum mentese</button>
+              </form>
+            </details>
+            <form action={deleteProjectDocumentAction} className="mt-4">
+              <input type="hidden" name="projectId" value={projectId} />
+              <input type="hidden" name="documentId" value={document.id} />
+              <input type="hidden" name="returnTo" value={returnTo} />
+              <ConfirmSubmitButton className="btn-secondary" message="Biztosan torlod ezt a dokumentumot?">
+                Dokumentum torlese
+              </ConfirmSubmitButton>
+            </form>
           </article>
         ))}
       </div>
@@ -1542,6 +1689,10 @@ function IssueGroup({
   title,
   issues,
   projectId,
+  returnTo,
+  taskOptions,
+  canEdit,
+  canDelete,
 }: {
   title: string;
   issues: Array<{
@@ -1552,9 +1703,13 @@ function IssueGroup({
     status: ProjectIssueStatus;
     responsibleName: string | null;
     resolvedAt: Date | null;
-    task: { title: string } | null;
+    task: { id: string; title: string } | null;
   }>;
   projectId: string;
+  returnTo: string;
+  taskOptions: Array<{ id: string; title: string }>;
+  canEdit: boolean;
+  canDelete: boolean;
 }) {
   if (!issues.length) return null;
 
@@ -1576,22 +1731,83 @@ function IssueGroup({
               </Badge>
             </div>
             <div className="mt-3 text-sm text-slate-600">
-              <div>Kapcsolodo feladat: {issue.task?.title || 'Nincs hozzakotve'}</div>
+              <div>Kapcsolodo teendo: {issue.task?.title || 'Nincs hozzakotve'}</div>
               <div>Megoldva: {formatDateTime(issue.resolvedAt)}</div>
             </div>
             {issue.description ? <p className="mt-3 text-sm leading-6 text-slate-600">{issue.description}</p> : null}
-            <form action={updateProjectIssueStatusAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <input type="hidden" name="projectId" value={projectId} />
-              <input type="hidden" name="issueId" value={issue.id} />
-              <Field label="Hibajegy statusza">
-                <Select name="status" defaultValue={issue.status}>
-                  {Object.entries(issueStatusLabel).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </Select>
-              </Field>
-              <button className="btn-secondary" type="submit">Frissites</button>
-            </form>
+            {canEdit ? (
+              <>
+                <details className="mt-4 rounded-2xl border border-slate-200 bg-slate-50">
+                  <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700">
+                    Szerkesztes
+                  </summary>
+                  <form action={updateProjectIssueAction} className="grid gap-3 border-t border-slate-200 p-4">
+                    <input type="hidden" name="projectId" value={projectId} />
+                    <input type="hidden" name="issueId" value={issue.id} />
+                    <input type="hidden" name="returnTo" value={returnTo} />
+                    <Field label="Cim">
+                      <Input name="title" defaultValue={issue.title} required />
+                    </Field>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Kategoria">
+                        <Select name="category" defaultValue={issue.category}>
+                          {Object.entries(issueCategoryLabel).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field label="Statusz">
+                        <Select name="status" defaultValue={issue.status}>
+                          {Object.entries(issueStatusLabel).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Kapcsolodo teendo">
+                        <Select name="taskId" defaultValue={issue.task?.id || ''}>
+                          <option value="">Nincs hozzakotve teendohoz</option>
+                          {taskOptions.map((task) => (
+                            <option key={task.id} value={task.id}>{task.title}</option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field label="Felelos / kapcsolattarto">
+                        <Input name="responsibleName" defaultValue={issue.responsibleName || ''} />
+                      </Field>
+                    </div>
+                    <Field label="Leiras">
+                      <Textarea name="description" defaultValue={issue.description || ''} />
+                    </Field>
+                    <button className="btn-secondary" type="submit">Problema mentese</button>
+                  </form>
+                </details>
+                <form action={updateProjectIssueStatusAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <input type="hidden" name="projectId" value={projectId} />
+                  <input type="hidden" name="issueId" value={issue.id} />
+                  <input type="hidden" name="returnTo" value={returnTo} />
+                  <Field label="Problema statusza">
+                    <Select name="status" defaultValue={issue.status}>
+                      {Object.entries(issueStatusLabel).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <button className="btn-secondary" type="submit">Frissites</button>
+                </form>
+              </>
+            ) : null}
+            {canDelete ? (
+              <form action={deleteProjectIssueAction} className="mt-3">
+                <input type="hidden" name="projectId" value={projectId} />
+                <input type="hidden" name="issueId" value={issue.id} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <ConfirmSubmitButton className="btn-secondary" message="Biztosan torlod ezt a problemat?">
+                  Problema torlese
+                </ConfirmSubmitButton>
+              </form>
+            ) : null}
           </article>
         ))}
       </div>
@@ -1601,4 +1817,18 @@ function IssueGroup({
 
 function EmptyState({ text }: { text: string }) {
   return <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">{text}</div>;
+}
+
+function InlineNotice({ tone, text }: { tone: 'success' | 'error' | 'warn'; text: string }) {
+  const classes = tone === 'success'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+    : tone === 'error'
+      ? 'border-rose-200 bg-rose-50 text-rose-900'
+      : 'border-amber-200 bg-amber-50 text-amber-950';
+
+  return (
+    <section className={`rounded-[24px] border p-4 text-sm shadow-[0_14px_36px_rgba(15,23,42,0.05)] ${classes}`}>
+      {text}
+    </section>
+  );
 }

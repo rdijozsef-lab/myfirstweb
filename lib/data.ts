@@ -179,26 +179,25 @@ export const blueprintSections = [
 ];
 
 export const officeNav = {
-  core: [
-    { href: "/office", label: "Dashboard" },
-    { href: "/office/projects", label: "Projektek" },
-    { href: "/office/contacts", label: "Kapcsolatok" },
-    { href: "/office/leads", label: "Leadek" },
-    { href: "/office/tasks", label: "Feladatok" },
-    { href: "/office/calendar", label: "Naptar" },
+  field: [
+    { href: "/office", label: "Vezerlopult" },
+    { href: "/office/projects", label: "Projektkozpont" },
+    { href: "/office/subcontractors", label: "Szakipar" },
+    { href: "/office/tasks", label: "Teendok" },
+    { href: "/office/calendar", label: "Idopontok" },
     { href: "/office/messages", label: "Uzenetek" },
   ],
-  content: [
+  admin: [
+    { href: "/office/contacts", label: "Emberek" },
+    { href: "/office/leads", label: "Erdeklodok" },
     { href: "/office/content", label: "Oldalak" },
     { href: "/office/blog", label: "Blog" },
-    { href: "/office/social", label: "Kozossegi media" },
+    { href: "/office/social", label: "Kozossegi posztok" },
     { href: "/office/media", label: "Media" },
-  ],
-  product: [
-    { href: "/office/modules", label: "Modulok" },
+    { href: "/office/modules", label: "Halado modulok" },
     { href: "/office/events", label: "Esemenyek" },
     { href: "/office/reports", label: "Riportok" },
-    { href: "/office/blueprint", label: "Blueprint" },
+    { href: "/office/blueprint", label: "Rendszerterv" },
     { href: "/office/settings", label: "Beallitasok" },
   ],
 };

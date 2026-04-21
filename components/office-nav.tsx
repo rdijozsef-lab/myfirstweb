@@ -11,6 +11,7 @@ type NavItem = {
 };
 
 function iconFor(href: string) {
+  if (href.startsWith('/office/subcontractors')) return <PeopleIcon />;
   if (href.startsWith('/office/projects')) return <FolderIcon />;
   if (href.startsWith('/office/contacts')) return <PeopleIcon />;
   if (href.startsWith('/office/leads')) return <PulseIcon />;
@@ -38,7 +39,7 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
 
   return (
     <div className="space-y-3">
-      <h4 className="px-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{title}</h4>
+      <h4 className="px-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">{title}</h4>
       <div className="space-y-2">
         {items.map((item) => {
           const active = matchesPath(pathname, item.href);
@@ -47,31 +48,24 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-[20px] px-3 py-3 text-sm font-medium transition ${
+              title={item.label}
+              aria-label={item.label}
+              className={`group flex items-center gap-3 rounded-[20px] px-3 py-3 text-sm font-medium transition ${
                 active
-                  ? 'bg-slate-950 text-white shadow-[0_20px_40px_rgba(15,23,42,0.16)]'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+                  ? 'bg-[#1f4f3c] text-white shadow-[0_18px_36px_rgba(31,79,60,0.18)]'
+                  : 'bg-[#f7faf5] text-slate-600 hover:bg-white hover:text-[#1f4f3c]'
               }`}
             >
               <span
-                className={`flex size-10 items-center justify-center rounded-2xl border ${
+                className={`flex size-11 items-center justify-center rounded-2xl border transition ${
                   active
                     ? 'border-white/15 bg-white/10 text-white'
-                    : 'border-slate-200 bg-slate-50 text-slate-700'
+                    : 'border-[#dde6d8] bg-white text-slate-700 group-hover:border-emerald-200 group-hover:text-[#1f4f3c]'
                 }`}
               >
                 {iconFor(item.href)}
               </span>
-              <span className="min-w-0 flex-1 truncate">{item.label}</span>
-              {item.badge ? (
-                <span
-                  className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                    active ? 'bg-white/12 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              ) : null}
+              <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
             </Link>
           );
         })}
@@ -83,9 +77,8 @@ function NavSection({ title, items }: { title: string; items: NavItem[] }) {
 export function OfficeSidebarNav() {
   return (
     <div className="space-y-6">
-      <NavSection title="Fo reszek" items={officeNav.core} />
-      <NavSection title="Tartalom" items={officeNav.content} />
-      <NavSection title="Rendszer" items={officeNav.product} />
+      <NavSection title="Napi munka" items={officeNav.field} />
+      <NavSection title="Iroda es halado" items={officeNav.admin} />
     </div>
   );
 }
@@ -93,15 +86,15 @@ export function OfficeSidebarNav() {
 export function OfficeBottomNav() {
   const pathname = usePathname();
   const mobileItems: NavItem[] = [
-    { href: '/office', label: 'Kezdo' },
-    { href: '/office/projects', label: 'Projektek' },
+    { href: '/office', label: 'Vezerlopult' },
+    { href: '/office/projects', label: 'Projektkozpont' },
+    { href: '/office/subcontractors', label: 'Szakipar' },
     { href: '/office/tasks', label: 'Feladatok' },
     { href: '/office/calendar', label: 'Naptar' },
-    { href: '/office/settings', label: 'Tobb' },
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/96 px-3 py-2 shadow-[0_-16px_48px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#dde6d8] bg-white/96 px-3 py-2 shadow-[0_-16px_48px_rgba(33,48,39,0.08)] backdrop-blur lg:hidden">
       <div className="grid grid-cols-5 gap-2">
         {mobileItems.map((item) => {
           const active = matchesPath(pathname, item.href);
@@ -111,12 +104,12 @@ export function OfficeBottomNav() {
               key={item.href}
               href={item.href}
               className={`flex min-h-[68px] flex-col items-center justify-center gap-2 rounded-2xl px-2 py-2 text-[11px] font-semibold ${
-                active ? 'bg-slate-950 text-white' : 'text-slate-500'
+                active ? 'bg-[#1f4f3c] text-white' : 'text-slate-500'
               }`}
             >
               <span
                 className={`flex size-8 items-center justify-center rounded-xl ${
-                  active ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700'
+                  active ? 'bg-white/10 text-white' : 'bg-[#f1f5ee] text-slate-700'
                 }`}
               >
                 {iconFor(item.href)}
