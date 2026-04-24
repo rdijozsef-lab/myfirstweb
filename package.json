@@ -6,12 +6,17 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "test": "tsx tests/workflow-rules.test.ts",
     "typecheck": "tsc --noEmit --pretty false",
     "check:fast": "npm run typecheck",
     "postinstall": "prisma generate",
+    "prisma:sync:pg": "tsx scripts/sync-prisma-postgres.ts",
     "prisma:generate": "prisma generate",
+    "prisma:generate:pg": "npm run prisma:sync:pg && prisma generate --schema prisma/schema.postgres.prisma",
     "prisma:push": "prisma db push",
+    "prisma:push:pg": "npm run prisma:sync:pg && prisma db push --schema prisma/schema.postgres.prisma",
     "db:deploy": "prisma db push --skip-generate",
+    "db:deploy:pg": "npm run prisma:sync:pg && prisma db push --skip-generate --schema prisma/schema.postgres.prisma",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

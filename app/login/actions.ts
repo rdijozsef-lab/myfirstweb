@@ -7,7 +7,7 @@ import { createSession, setSessionCookie, verifyPassword, clearSessionCookie } f
 export async function loginAction(formData: FormData) {
   const username = String(formData.get('username') || '').trim();
   const password = String(formData.get('password') || '');
-  const nextUrl = String(formData.get('next') || '/office');
+  const nextUrl = String(formData.get('next') || '/dashboard');
 
   if (!username || !password) {
     redirect(`/login?error=${encodeURIComponent('Add meg a felhasználónevet és a jelszót.')}`);
@@ -43,7 +43,10 @@ export async function loginAction(formData: FormData) {
   });
 
   await setSessionCookie(token);
-  redirect(nextUrl.startsWith('/office') ? nextUrl : '/office');
+  const allowedNextUrl = ['/office', '/dashboard', '/portal'].some((prefix) => nextUrl.startsWith(prefix))
+    ? nextUrl
+    : '/dashboard';
+  redirect(allowedNextUrl);
 }
 
 export async function logoutAction() {
