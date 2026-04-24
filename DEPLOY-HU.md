@@ -96,6 +96,7 @@ Pelda:
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
 AUTH_SECRET="ide-egy-nagyon-hosszu-eros-titok-kell"
+RUN_DB_SEED="true"
 ```
 
 ## Fontos megjegyzes PostgreSQL-hez

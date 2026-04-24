@@ -18,6 +18,7 @@ AUTH_SECRET="egy-hosszu-eros-titok"
 SUPABASE_URL="https://xxx.supabase.co"
 SUPABASE_ANON_KEY="..."
 SUPABASE_SERVICE_ROLE_KEY="..."
+RUN_DB_SEED="true"
 ```
 
 Ha kulon direct connectiont is hasznalsz migraciokhoz vagy admin muveletekhez, akkor opcionálisan felveheted ezt is:
@@ -51,6 +52,12 @@ npm run prisma:push:pg
 ```bash
 npm run db:seed
 ```
+
+## Vercel viselkedes
+
+- `postinstall` kozben a projekt automatikusan felismeri, hogy SQLite vagy PostgreSQL kapcsolatot hasznal-e, es ahhoz general Prisma klienst
+- `build` kozben automatikusan lefut a megfelelo `db push`
+- ha `RUN_DB_SEED=true`, akkor deploy kozben a seed is lefut
 
 ## Fontos
 

@@ -117,6 +117,8 @@ Az uj minositett kivitelezesi MVP elerese:
   - `npm run prisma:generate:pg`
   - `npm run prisma:push:pg`
   - reszletes leiras: [SUPABASE-HU.md](</j:/Webes melók/myfirstoffice-tailwind-prisma-v1/SUPABASE-HU.md>)
+- Deploy/build kozben a projekt automatikusan a megfelelo Prisma providerrel general klienst es lefuttatja a schema push-t.
+- Ha Vercelen demo adminnal is be akarsz lepni, allitsd be: `RUN_DB_SEED=true`
 - A munkafazis fajlfeltoltes lokalis MVP-ben a `public/uploads` ala ment.
 - A social, messages, content es tobbi office oldal jelenleg UI-vaz / demo szint.
 - A Contacts, Leads, Tasks es Calendar modulok mar valodi backenddel mennek.
